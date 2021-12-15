@@ -1,5 +1,6 @@
 using JLD2
 
+# Simulation Code
 include("isingmetro.jl")
 
 # open/overwrite file
@@ -15,7 +16,10 @@ msteps = 6000  # Steps for measurements
 
 for N in lattice_sizes
     println("Calculating correlation times for $(N)x$(N) ...")
+
+    # Initial spins at T = ∞
     spins = rand([-1.0, 1.0], (N, N))
+
     for stepT in 1:length(Temps)
         T = Temps[stepT]
         println("   | Calculating for Temperature = $(T) ...")
@@ -34,11 +38,15 @@ for N in lattice_sizes
         
         @. mags /= N^2
         corrfn = autocorrelation_fn(mags, N)
+
         # Measure the integrated correlation time in a small window
-        corr_times[stepT] = sum(corrfn[1:100])
+        corr_times[stepT] = sum(corrfn[1:200])
 
         println("   | Done.")
     end
+
+    # convert correlation times to integer values
+    corr_times = convert.(Int64, ceil.(corr_times))
 
     # Write generated data to the file
     println("Writing data...")
