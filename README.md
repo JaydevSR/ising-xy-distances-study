@@ -1,3 +1,3 @@
-# monte-carlo-ml-study
+# spin-systems-ml-study
 
 To calculate first and second nearest neighbor disctances of uncorrelated spin configurations.
