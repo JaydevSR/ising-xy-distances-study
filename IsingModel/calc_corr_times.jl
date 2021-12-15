@@ -45,12 +45,13 @@ for N in lattice_sizes
         println("   | Done.")
     end
 
-    # convert correlation times to integer values
-    corr_times = convert.(Int64, ceil.(corr_times))
-
     # Write generated data to the file
     println("Writing data...")
-    file["$(N)x$(N)/corr_times"] = [(Temps[i], corr_times[i]) for i=1:length(Temps)]
+    # convert correlation times to integer values
+    file["$(N)x$(N)/corr_times"] = [
+        (Temps[i],convert(Int64, ceil(corr_times[i]))) 
+        for i=1:length(Temps)
+    ]
 
     println("Done.")
     println("------------------------------------------------\n")

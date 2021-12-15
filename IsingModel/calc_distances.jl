@@ -12,7 +12,9 @@ data = jldopen("data/isingdata.jld2", "r")
 
 distance_data = Dict()
 
+println("Calculating distances ...")
 for N in lattice_sizes
+    println("   | For N=$(N)")
     uncorr_data = data["$(N)x$(N)/uncorr_measurements"]
     nn_dist_with_T = []
 
@@ -31,10 +33,12 @@ for N in lattice_sizes
     end
 
     distance_data["$(N)"] = nn_dist_with_T
+    println("   | Done.")
 end
+println("Done.\n")
 
 # Plotting
-
+println("Generating Plots ...")
 # For 1st NN distance
 let N=lattice_sizes[1]
     plot_data = distance_data["$(N)"]
@@ -74,5 +78,7 @@ xlabel!("Temperature")
 ylabel!("distances")
 title!("First and Second NN distance with T (N=10)")
 savefig("plots/first_second_nn_ising_10.png")
+
+println("Done.")
 
 close(data)
