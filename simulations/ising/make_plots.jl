@@ -9,10 +9,11 @@ f = Figure(resolution = (800, 400), font_size = 12)
 
 ax1 = Axis(f[1,1], xlabel="Temperature", ylabel="⟨r₁⟩", title="Mean value of first NN distance with Temperature")
 
-scatterlines!(ax1, Temps, mean_r1_10)
-scatterlines!(ax1, Temps, mean_r1_20)
+scatterlines!(ax1, Temps, mean_r1_10, label="Size=10x10", markercolor=:blue)
+scatterlines!(ax1, Temps, mean_r1_20, label="Size=20x20", markercolor=:purple)
+axislegend()
 
-display(f)
-save("results/ising/mean_r1_with_T.pdf", f)
+# display(f)
+save("results/ising/mean_r1_with_T.png", f)
 
 close(data)
