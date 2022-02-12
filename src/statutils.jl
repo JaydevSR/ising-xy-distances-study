@@ -59,7 +59,7 @@ function blocking_err(samples, calc_qty, args...; blocks = 20)
     return err
 end
 
-function ss_correlation_fn(sites::Matrix, N=Int64; metric=*)
+function ss_correlation_fn(sites::Matrix, N::Int64; metric=*)
     ss_corrs = zeros(Float64, N)
     nsamples = zeros(Float64, N)
     for i=1:N
@@ -71,4 +71,15 @@ function ss_correlation_fn(sites::Matrix, N=Int64; metric=*)
         end
     end
     return ss_corrs ./ nsamples
+end
+
+function structure_factor(spins::Matrix, N::Int64; metric=*)
+    R_spins = 0
+    for i in CartesianIndices(spins)
+        for j in CartesianIndices(spins)
+            R_spins += metric(spins[i], spins[j])
+        end
+    end
+    R_spins /= N^4
+    return R_spins
 end
