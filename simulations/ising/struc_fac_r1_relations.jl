@@ -37,7 +37,8 @@ for stepT in 1:length(Temps)
     println("   |   > Calculating Distances ...")
     # fit the kNN algorithm to uncorrelated spin configs
     model = NearestNeighbors(n_neighbors = 2, algorithm = "ball_tree")
-    nnbrs = fit!(model, [reshape(uncorrelated_spins[:, :, i], N * N) for i = 1:size(uncorrelated_spins)[3]])  # Ignore warning 
+    configs_vec = [reshape(uncorrelated_spins[:, :, i], N * N) for i = 1:size(uncorrelated_spins)[3]]
+    nnbrs = fit!(model, configs_vec)  # Ignore warning 
 
     # calculate distances
     dists, idxs = NearestNeighbors.kneighbors(nnbrs, [reshape(uncorrelated_spins[:, :, i], N * N) for i = 1:size(uncorrelated_spins)[3]])

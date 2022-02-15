@@ -110,3 +110,63 @@ function ising_equilibrate_system!(spins::Matrix, T, eqsteps; wolff=false)
         end
     end
 end
+
+function xy_getcorrtime!(spins::Matrix, T, msteps=5000)
+    N = size(spins)[1]
+    ergs = zeros(Float64, msteps)
+    for i in 1:msteps-1
+        xywolff_step!(spins, N, T)
+        ergs[i+1] = xy_total_energy(spins, N)
+    end
+    
+    @. ergs /= N^2
+    corrfn = autocorrelation_fn(ergs)
+
+    # Measure the integrated correlation time in a small window
+    τ = corrfn[1:200] |> sum |> ceil
+    return convert(Int64, τ)
+end
+
+function xy_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr)
+    N = size(spins)[1]
+    twice_τ = 2*τ
+    nsteps = twice_τ*n_uncorr
+    uncorrelated_spins = zeros(Float64, (N, N, n_uncorr))
+    for j=1:nsteps
+        xywolff_step!(spins, N, T)
+        if j%twice_τ == 0
+            uncorrelated_spins[:, :, j÷twice_τ] = spins
+        end
+    end
+    return uncorrelated_spins
+end
+
+function xy_equilibrate_system!(spins::Matrix, T, eqsteps)
+    for i in 1:eqsteps
+        xywolff_step!(spins, size(spins)[1], T)
+    end
+end
+
+function xy_prepare_vector(config_array::AbstractArray; xcomp=true, ycomp=true)
+    nconf = size(config_array)[3]
+    configs_vec = [reshape(config_array[:, :, i], N * N) for i = 1:nconf]
+    emptyness = []
+    if xcomp
+        x_vec = map(x -> cos2pi.(x), configs_vec)
+    else
+        x_vec = fill(emptyness, nconf)
+    end
+
+    if ycomp
+        y_vec = map(y -> sin2pi.(y), configs_vec)
+    else
+        y_vec = fill(emptyness, nconf)
+    end
+
+    spins_vector = []
+    sizehint!(spins_vector, nconf)
+    for i=1:nconf
+        push!(spins_vector, [x_vec[i]..., y_vec[i]...])
+    end
+    return spins_vector
+end
