@@ -11,13 +11,13 @@ xstr = "xcomp"
 ystr = "ycomp"
 emptystr = ""
 
-N = 10
-Temps = [0.7, 0.9, 1.1, 1.3, 1.5]
-τvals = [20, 30, 40, 50, 60]
-simtype = "multitemp"
-phi = false
+N = 20
+Temps = 0.5 # [0.7, 0.9, 1.1, 1.3, 1.5]
+τvals = 20 # [20, 30, 40, 50, 60]
+simtype = "smalltemp"
+phi = true
 xcomp = true
-ycomp = true
+ycomp = false
 
 plotxlab = "r₁ (xcomp=$(xcomp), ycomp=$(ycomp))"
 plotylab = "R$(phi ? phistr : dotstr)"
