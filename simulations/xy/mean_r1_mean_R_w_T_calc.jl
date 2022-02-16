@@ -8,12 +8,12 @@ phistr = "phi"
 dotstr = "dot"
 
 Temps = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4]
-τvals = [20, 25, 30, 35, 40, 45, 50, 55]
+τvals = [20, 30, 40, 50, 60, 70, 80, 90]
 
 N = 20
 spins = rand(Float64, (N, N))
 eqsteps = 2000
-n_uncorr = 100
+n_uncorr = 500
 phi = true
 println("Calculating for N=$(N) ...")
 
@@ -24,6 +24,7 @@ for stepT in 1:length(Temps)
     T = Temps[stepT]
     println("   | Temperature = $(T) ...")
 
+    println("   |   > Equlibrating system ...")
     xy_equilibrate_system!(spins, T, eqsteps)
 
     # println("   |   > Calculating correlation time ...")
@@ -69,6 +70,8 @@ Colorbar(
     ticks = Temps[1:end], tickalign=1,
     label="Temperature"
 )
+
+ylims!(0.0, 0.5)
 # display(f)
 save("results/xy/$(N)x$(N)/mean_r1_mean_R$(phi ? phistr : dotstr)_w_T_$(N)_xywolff.png", f)
 println("Done.")
