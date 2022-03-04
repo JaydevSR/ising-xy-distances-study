@@ -19,6 +19,7 @@ function xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Flo
     sval = spins[seed...]
     stack = [seed]
     cluster[seed...] = true
+    N = size(spins)[1]
     while !isempty(stack)
         k = pop!(stack)
         kval = spins[k...]

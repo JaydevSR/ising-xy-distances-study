@@ -45,6 +45,51 @@ function ising_getconfigdata!(
     end
 end
 
+function xy_getconfigdata!(
+    file::JLD2.JLDFile,
+    lattice_sizes::AbstractArray{Int64},
+    Temps::AbstractArray{Float64},
+    n_uncorr::Int64,
+    eqsteps::Int64; 
+    calculate_autocorr_times::Bool=false,
+    autocorr_times::AbstractArray{Int64}=ones(Int64, length(Temps))
+    )
+    for N in lattice_sizes
+        println("Generating configurations: Size = $(N)x$(N) ...")
+
+        spins = rand(Float64, (N, N))
+
+        configs_data = []
+        sizehint!(configs_data, length(Temps))
+        for stepT in 1:length(Temps)
+            T = Temps[stepT]
+            println("   | Temperature = $(T) ...")
+    
+            xy_equilibrate_system!(spins, T, eqsteps)
+
+            if calculate_autocorr_times
+                println("   |   | Calculating correlation time ...")
+                autocorr_times[stepT] = xy_getcorrtime!(spins, T)
+                println("   |   | Done.")
+            end
+
+            τ = autocorr_times[stepT]
+            println("   |   | Making uncorrelated measurements (τ=$(τ)) ...")
+            uncorrelated_spins = xy_getuncorrconfigs!(spins, T, τ, n_uncorr)
+            push!(configs_data, (T, copy(uncorrelated_spins)))
+            println("   |   | Done.")
+        end
+    
+        # Write generated data to the file
+        println("\nWriting data...")
+        # file["$(N)x$(N)/autocorr_times"] = [(Temps[i], autocorr_times[i]) for i=1:length(Temps)]
+        file["$(N)x$(N)/uncorr_configs"] = configs_data
+    
+        println("Done.")
+        println("------------------------------------------------\n")
+    end
+end
+
 function ising_getcorrtime!(spins::Matrix, T, msteps=6000; wolff=false)
     N = size(spins)[1]
     mags = zeros(Float64, msteps)
@@ -142,8 +187,9 @@ function xy_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr)
 end
 
 function xy_equilibrate_system!(spins::Matrix, T, eqsteps)
+    N = size(spins)[1]
     for i in 1:eqsteps
-        xywolff_step!(spins, size(spins)[1], T)
+        xywolff_step!(spins, N, T)
     end
 end
 

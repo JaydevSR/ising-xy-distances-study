@@ -5,19 +5,22 @@ include("../../src/spinmc.jl")
 
 @sk_import neighbors:NearestNeighbors
 
+datapath = "results/xy/xy_config_data.jld2"
+println("Using data from: $datapath")
+file = jldopen(datapath)
+
 phistr = "phi"
 dotstr = "dot"
 xstr = "xcomp"
 ystr = "ycomp"
 emptystr = ""
 
-N = 20
-Temps = 0.5 # [0.7, 0.9, 1.1, 1.3, 1.5]
-τvals = 20 # [20, 30, 40, 50, 60]
-simtype = "smalltemp"
-phi = true
+N = 30
+Temps = [0.7, 1.0, 1.3, 1.6]
+simtype = "multitemp"
+phi = false
 xcomp = true
-ycomp = false
+ycomp = true
 
 plotxlab = "r₁ (xcomp=$(xcomp), ycomp=$(ycomp))"
 plotylab = "R$(phi ? phistr : dotstr)"
@@ -27,27 +30,22 @@ ax = Axis(f[1, 1], xlabel = plotxlab, ylabel = plotylab, title = "Lattice size =
 
 println("Calculating For N=$(N) ...")
 
-spins = rand(Float64, (N, N))
-eqsteps = 2000
-n_uncorr = 1000
+data = Dict(file["$(N)x$(N)/uncorr_configs"])
 
 ##
 
 for stepT in 1:length(Temps)
     T = Temps[stepT]
     println("   | Temperature = $(T) ...")
+    
+    if haskey(data, T)
+        uncorrelated_spins = data[T]
+    else
+        println("   |   > No Data Found.")
+        continue
+    end
 
-    println("   |   > Equlibrating the system ...")
-    xy_equilibrate_system!(spins, T, eqsteps)
-
-    # println("   |   > Calculating correlation time ...")
-    # τ = xy_getcorrtime!(spins, T)
-    # println("   |   > Done.")
-    τ=τvals[stepT]
-
-    println("   |   > Making uncorrelated measurements (τ=$(τ)) ...")
-    uncorrelated_spins = xy_getuncorrconfigs!(spins, T, τ, n_uncorr)
-    println("   |   > Done.")
+    uncorrelated_spins = data[T]
 
     println("   |   > Calculating Distances ...")
     # fit the kNN algorithm to uncorrelated spin configs
@@ -84,4 +82,5 @@ println("Saving Plots to: $(location)")
 save(location, f)
 println("Done.")
 
+close(file)
 ##
