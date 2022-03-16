@@ -195,6 +195,7 @@ end
 
 function xy_prepare_vector(config_array::AbstractArray; xcomp=true, ycomp=true)
     nconf = size(config_array)[3]
+    N = size(config_array)[1]
     configs_vec = [reshape(config_array[:, :, i], N * N) for i = 1:nconf]
     emptyness = []
     if xcomp
