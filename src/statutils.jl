@@ -73,13 +73,17 @@ function ss_correlation_fn(sites::Matrix, N::Int64; metric=*)
     return ss_corrs ./ nsamples
 end
 
-function structure_factor(spins::Matrix, N::Int64; metric=*)
+function structure_factor(spins::Matrix, N::Int64; metric=*, scaled::Bool=false)
     R_spins = 0
     for i in CartesianIndices(spins)
         for j in CartesianIndices(spins)
             R_spins += metric(spins[i], spins[j])
         end
     end
-    R_spins /= N^4
+    if scaled
+        R_spins /= N^2
+    else
+        R_spins /= N^4
+    end
     return R_spins
 end
