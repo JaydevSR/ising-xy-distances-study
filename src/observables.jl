@@ -69,7 +69,7 @@ end
 """
 Spin-wave stiffness or helicity modulus for XY model
 """
-function xy_spin_stiffness(configs::AbstractArray, T::Float64, N::Int64)
+function xy_spin_stiffness(configs::AbstractArray, T::Float64, N::Int64; get_arr=false)
     beta = 1/T
     n_samples = length(configs)
     gamma_arr = zeros(Float64, n_samples)
@@ -96,6 +96,10 @@ function xy_spin_stiffness(configs::AbstractArray, T::Float64, N::Int64)
             qty3 += sin2pi(s_k - spins[nny])
         end
         gamma_arr[i] = (qty1 - beta*qty2^2 - beta*qty3^2) / (2N^2) 
+    end
+
+    if get_arr
+        return gamma_arr
     end
     return mean(gamma_arr)
 end
