@@ -90,6 +90,53 @@ function xy_getconfigdata!(
     end
 end
 
+function xy_getconfigdata_to_txt(
+    lattice_sizes::AbstractArray{Int64},
+    Temps::AbstractArray{Float64},
+    n_uncorr::Int64,
+    eqsteps::Int64; 
+    calculate_autocorr_times::Bool=false,
+    autocorr_times::AbstractArray{Int64}=ones(Int64, length(Temps)),
+    store_at::AbstractString=""
+    )
+    current_loc = pwd()
+    cd(store_at)
+    for N in lattice_sizes
+        println("Generating configurations: Size = $(N)x$(N) ...")
+        spins = rand(Float64, (N, N))
+        for stepT in 1:length(Temps)
+            isdir("Size$N") ? 1 : mkdir("Size$N")
+            cd("Size$N")
+            location="uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
+
+            file = open(location, "w")
+            T = Temps[stepT]
+            println("   | Temperature = $(T) ...")
+    
+            xy_equilibrate_system!(spins, T, eqsteps)
+
+            if calculate_autocorr_times
+                println("   |   | Calculating correlation time ...")
+                autocorr_times[stepT] = xy_getcorrtime!(spins, T)
+                println("   |   | Done.")
+            end
+
+            τ = autocorr_times[stepT]
+            println("   |   | Making uncorrelated measurements (τ=$(τ)) ...")
+            uncorrelated_spins = xy_getuncorrconfigs!(spins, T, τ, n_uncorr)
+            
+            open(location, "w") do io
+                writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
+            end;
+            cd("..")
+            println("   |   | Done.")
+        end
+        cd(current_loc)
+        println("Done.")
+        println("------------------------------------------------\n")
+    end
+end
+
 function ising_getcorrtime!(spins::Matrix, T, msteps=6000; wolff=false)
     N = size(spins)[1]
     mags = zeros(Float64, msteps)
@@ -216,4 +263,9 @@ function xy_prepare_vector(config_array::AbstractArray; xcomp=true, ycomp=true)
         push!(spins_vector, [x_vec[i]..., y_vec[i]...])
     end
     return spins_vector
+end
+
+function get_array_from_file(file, N)
+    arr = readdlm("file", ",", Float64)
+    return reshape(arr, N, N, :)
 end

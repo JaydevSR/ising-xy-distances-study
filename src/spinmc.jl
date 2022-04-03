@@ -2,6 +2,7 @@ using CairoMakie
 using JLD2
 using Statistics
 using SpecialFunctions
+using DelimitedFiles
 
 include("ising.jl")
 include("xy.jl")
