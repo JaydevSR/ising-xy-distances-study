@@ -49,7 +49,7 @@ for N in Nvals
     
         println("   |   > Calculating Spin-stiffness ...")
         configs = [uncorrelated_spins[:, :, i] for i in 1:size(uncorrelated_spins)[3]]
-        spin_stiffness = xy_spin_stiffness(configs, T, N; get_arr=true)
+        spin_stiffness = xy_spin_stiffness_config_arr(configs, T, N)
         println("   |   > Done.")
 
         println("   |   > Plotting Γ v/s r₁ ...")

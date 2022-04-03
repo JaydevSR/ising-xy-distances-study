@@ -1,35 +1,4 @@
 """
-    ising_total_magnetization(spins)
-
-Calculate the total magnetization of square spin lattice.
-"""
-function ising_total_magnetization(spins)
-    return sum(spins)
-end
-
-
-"""
-    ising_total_energy(spins)
-
-Calculate the total energy of the square spin lattice (with zero field and J=1).
-"""
-function ising_total_energy(spins)
-    N = size(spins)[1]
-    running_sum = 0
-    for i = 1:N
-        for j = 1:N
-            s_k = spins[i, j]
-            for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
-                nn = [i, j] + δ
-                @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-                running_sum += s_k * spins[nn[1], nn[2]]
-            end
-        end
-    end
-    return -running_sum / 2  # divide by 2 because each bond counted twice
-end
-
-"""
     xy_total_energy(spins)
 
 Calculate the total energy of the square spin lattice `spins` of size `(N, N)` with zero field and J=1.

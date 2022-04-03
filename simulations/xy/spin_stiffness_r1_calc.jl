@@ -55,7 +55,7 @@ for N in Nvals
     
         println("   |   > Calculating Spin-stiffness ...")
         configs = [uncorrelated_spins[:, :, i] for i in 1:n_samples]
-        spin_stiffness[stepT] = xy_spin_stiffness(configs, T, N)
+        spin_stiffness[stepT] = xy_spin_stiffness_value(configs, T, N)
         println("   |   > Done.")
     end
 
