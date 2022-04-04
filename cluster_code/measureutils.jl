@@ -17,7 +17,6 @@ function xy_getconfigdata_to_txt(
             cd("Size$N")
             location="uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
 
-            file = open(location, "w")
             T = Temps[stepT]
             println("   | Temperature = $(T) ...")
     
@@ -39,10 +38,10 @@ function xy_getconfigdata_to_txt(
             cd("..")
             println("   |   | Done.")
         end
-        cd(current_loc)
         println("Done.")
         println("------------------------------------------------\n")
     end
+    cd(current_loc)
 end
 
 function xy_getcorrtime!(spins::Matrix, T, msteps=5000)
