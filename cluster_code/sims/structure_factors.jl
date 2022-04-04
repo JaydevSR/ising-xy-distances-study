@@ -10,7 +10,7 @@ n_samples = 1000
 
 for N in Nvals
     println("Calculating For N=$(N) ...")
-    structure_factors = zeros(Float64, (length(Temps), n_samples))
+    struct_factors = zeros(Float64, (length(Temps), n_samples))
     for stepT in 1:length(Temps)
         T = Temps[stepT]
         println("   | Temperature = $(T) ...")
@@ -32,6 +32,6 @@ for N in Nvals
     ispath(basepath*"struc_facs") ? 1 : mkpath(basepath*"struc_facs")
     location=basepath*"struc_facs/struc_facs_N$(N).txt"
     open(location, "w") do io
-        writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
+        writedlm(io, [Temps struct_factors], ',')
     end;
 end
