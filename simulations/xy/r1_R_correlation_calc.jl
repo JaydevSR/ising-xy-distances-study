@@ -4,18 +4,19 @@ using ScikitLearn
 
 @sk_import neighbors: NearestNeighbors
 
-basepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/"
+basepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
 println("Using data from: $basepath")
 
-Temps = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5]
 
-Nvals = [30, 40, 50, 60]
+Nvals = [10, 20, 30, 40, 50, 60]
 n_samples = 1000
 xcomp=true
 ycomp=true
 
-f = Figure(resolution = (800, 600))
-ax = Axis(f[1, 1], xlabel = "T", ylabel = "⟨R⋅r₁⟩ - ⟨R⟩⟨r₁⟩ ", title = "Correlation between r₁ and R with temperature")
+f = Figure(resolution = (1200, 800))
+ax = Axis(f[1, 1], xlabel = "T", ylabel = "C (scaled by nsites)", title = "Correlation between r₁ and Ns*R with temperature")
+ax2 = Axis(f[1, 2], xlabel = "T", ylabel = "C", title = "Correlation between r₁ and R with temperature")
 
 Nmarks = Dict(10 => :circle, 20 => :rect, 30 => :diamond, 40 => :cross, 50 => :xcross, 60 => :star4)
 Ncols = Dict(10 => :red, 20 => :green, 30 => :blue, 40 => :yellow, 50 => :magenta, 60 => :black)
@@ -33,7 +34,7 @@ for N in Nvals
         T = Temps[stepT]
         println("   | Temperature = $(T) ...")
 
-        datafile = basepath*"data/xy/Size$(N)/uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
+        datafile = basepath*"Size$(N)/uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
         
         if !isfile(datafile)
             println("   |   > No Data Found.")
@@ -67,12 +68,16 @@ for N in Nvals
     println("   |   > Adding Plot ...")
     scatter_points = Point2f.(Temps, corr_arr)
     scatterlines!(ax, scatter_points, color=Ncols[N], label="L=$(N)", marker=Nmarks[N])
+
+    scatter_points2 = Point2f.(Temps, corr_arr/(N^2))
+    scatterlines!(ax2, scatter_points2, color=Ncols[N], label="L=$(N)", marker=Nmarks[N])
     println("   |   > Done.")
 end
 
 axislegend(ax, position = :rb)
+axislegend(ax2, position = :rb)
 
-location1 = "results/xy/r1_R_correlation_v2.pdf"
+location1 = "results/xy/r1_R_correlation_v3.pdf"
 
 println("Saving Plots")
 save(location1, f)

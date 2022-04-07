@@ -104,6 +104,36 @@ end
 """
 Spin-wave stiffness or helicity modulus for XY model
 """
+function xy_spin_stiffness_config_arr_two(configs::AbstractArray, T::Float64, N::Int64)
+    beta = 1/T
+    n_samples = length(configs)
+    gamma_arr = zeros(Float64, n_samples)
+    ex = CartesianIndex(1, 0)
+    ey = CartesianIndex(0, 1)
+
+    for i=1:n_samples
+        spins = configs[i]
+        qty1 = qty2 = qty3 = 0
+        for ind in CartesianIndices(spins)
+            s_k = spins[ind]
+            
+            nnx = ind + ex
+            nnx = CartesianIndex(mod1.(Tuple(nnx), N))  # Apply periodic boundary conditions
+            qty2 += sin2pi(s_k - spins[nnx])
+
+            nny = ind + ey
+            nny = CartesianIndex(mod1.(Tuple(nny), N))  # Apply periodic boundary conditions
+            qty3 += sin2pi(s_k - spins[nny])
+        end
+        gamma_arr[i] = (beta*qty2^2) / (2N^2) # (qty1 - beta*qty2^2 - beta*qty3^2) / (2N^2) 
+    end
+
+    return gamma_arr
+end
+
+"""
+Spin-wave stiffness or helicity modulus for XY model
+"""
 function xy_spin_stiffness_value(configs::AbstractArray, T::Float64, N::Int64)
     beta = 1/T
     n_samples = length(configs)
