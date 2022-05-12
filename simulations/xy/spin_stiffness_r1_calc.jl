@@ -4,9 +4,8 @@ using ScikitLearn
 
 @sk_import neighbors: NearestNeighbors
 
-datapath = "results/xy/xy_config_data.jld2"
-println("Using data from: $datapath")
-file = jldopen(datapath)
+dbasepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
+println("Using data from: $basepath")
 
 Temps = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
@@ -24,7 +23,6 @@ Nmarks = Dict(10 => :circle, 20 => :rect, 30 => :diamond, 40 => :cross)
 
 for N in Nvals
     println("Calculating For N=$(N) ...")
-    data = Dict(file["$(N)x$(N)/uncorr_configs"])
 
     mean_r1 = zeros(Float64, length(Temps))
     spin_stiffness = zeros(Float64, length(Temps))
@@ -33,14 +31,14 @@ for N in Nvals
         T = Temps[stepT]
         println("   | Temperature = $(T) ...")
         
-        if haskey(data, T)
-            uncorrelated_spins = data[T]
-        else
+        datafile = basepath*"Size$(N)/uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
+        
+        if !isfile(datafile)
             println("   |   > No Data Found.")
             continue
         end
     
-        uncorrelated_spins = data[T]
+        uncorrelated_spins = reshape(readdlm(datafile, ',', Float64), N, N, :)
     
         println("   |   > Calculating Distances ...")
         # fit the kNN algorithm to uncorrelated spin configs
@@ -83,5 +81,3 @@ println("Saving Plots")
 save(location1, f)
 save(location2, f2)
 println("Done.")
-
-close(file)

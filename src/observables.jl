@@ -121,9 +121,9 @@ function xy_spin_stiffness_config_arr_two(configs::AbstractArray, T::Float64, N:
             nnx = CartesianIndex(mod1.(Tuple(nnx), N))  # Apply periodic boundary conditions
             qty2 += sin2pi(s_k - spins[nnx])
 
-            nny = ind + ey
-            nny = CartesianIndex(mod1.(Tuple(nny), N))  # Apply periodic boundary conditions
-            qty3 += sin2pi(s_k - spins[nny])
+            # nny = ind + ey
+            # nny = CartesianIndex(mod1.(Tuple(nny), N))  # Apply periodic boundary conditions
+            # qty3 += sin2pi(s_k - spins[nny])
         end
         gamma_arr[i] = (beta*qty2^2) / (2N^2) # (qty1 - beta*qty2^2 - beta*qty3^2) / (2N^2) 
     end
