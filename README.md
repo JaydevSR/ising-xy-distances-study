@@ -1,3 +1,1 @@
-# spin-systems-ml-study
-
-To calculate first and second nearest neighbor disctances of uncorrelated spin configurations.
+# spin-systems-spin-configurations-and-distances-study
