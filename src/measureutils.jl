@@ -104,9 +104,9 @@ function xy_getconfigdata_to_txt(
     for N in lattice_sizes
         println("Generating configurations: Size = $(N)x$(N) ...")
         spins = rand(Float64, (N, N))
+        isdir("Size$N") ? 1 : mkdir("Size$N")
+        cd("Size$N")
         for stepT in 1:length(Temps)
-            isdir("Size$N") ? 1 : mkdir("Size$N")
-            cd("Size$N")
             location="uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
 
             file = open(location, "w")
@@ -128,13 +128,14 @@ function xy_getconfigdata_to_txt(
             open(location, "w") do io
                 writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
             end;
-            cd("..")
             println("   |   | Done.")
         end
-        cd(current_loc)
+        cd(store_at)
         println("Done.")
         println("------------------------------------------------\n")
     end
+    cd(current_loc)
+    nothing
 end
 
 function ising_getcorrtime!(spins::Matrix, T, msteps=6000; wolff=false)

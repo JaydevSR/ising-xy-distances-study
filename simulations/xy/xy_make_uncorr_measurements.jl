@@ -13,12 +13,12 @@ include("../../src/spinmc.jl")
 
 # close(file)
 
-root_location = "results/xy/measurements/"
+root_location = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
 
-Temps = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]
-τvals = [20 , 25 , 30 , 35 , 45 , 55 , 65 , 75 , 85 , 95 , 115, 145]
+Temps = [0.975, 1.01, 1.04]
+τvals = [60, 60, 60]
 
-lattice_sizes = [10]
+lattice_sizes = [10, 20, 30, 40, 50, 60]
 eqsteps = 2000
 n_uncorr = 1000
 

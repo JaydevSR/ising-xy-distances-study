@@ -7,7 +7,7 @@ using ScikitLearn
 basepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
 println("Using data from: $basepath")
 
-Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5]
+Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.975, 1.0, 1.01, 1.025, 1.04, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5]
 
 Nvals = [10, 20, 30, 40, 50, 60]
 n_samples = 1000
@@ -21,7 +21,10 @@ ax2 = Axis(f[1, 2], xlabel = "T", ylabel = "C", title = "Correlation between râ‚
 Nmarks = Dict(10 => :circle, 20 => :rect, 30 => :diamond, 40 => :cross, 50 => :xcross, 60 => :star4)
 Ncols = Dict(10 => :red, 20 => :green, 30 => :blue, 40 => :yellow, 50 => :magenta, 60 => :black)
 
-for N in Nvals
+corr_data = zeros(Float64, (length(Nvals), length(Temps)))
+
+for stepN in 1:length(Nvals)
+    N = Nvals[stepN]
     println("Calculating For N=$(N) ...")
 
     corr_arr = zeros(Float64, length(Temps))
@@ -72,13 +75,28 @@ for N in Nvals
     scatter_points2 = Point2f.(Temps, corr_arr/(N^2))
     scatterlines!(ax2, scatter_points2, color=Ncols[N], label="L=$(N)", marker=Nmarks[N])
     println("   |   > Done.")
+
+    corr_data[stepN, 1:length(corr_arr)] = corr_arr
 end
 
 axislegend(ax, position = :rb)
 axislegend(ax2, position = :rb)
 
-location1 = "results/xy/r1_R_correlation_v3.pdf"
+location_plot = "results/xy/r1_R_correlation_plot.pdf"
+location_data = "results/xy/"
+
+open(location_data*"corr_data.txt", "w") do io
+    writedlm(io, corr_data, ',')
+end;
+
+open(location_data*"corr_Nvals.txt", "w") do io
+    writedlm(io, Nvals, ',')
+end;
+
+open(location_data*"corr_Temps.txt", "w") do io
+    writedlm(io, Temps, ',')
+end;
 
 println("Saving Plots")
-save(location1, f)
+save(location_plot, f)
 println("Done.")

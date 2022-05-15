@@ -3,3 +3,5 @@
 *.jld2
 
 uncorr_configs*.txt
+
+corr_*.txt
