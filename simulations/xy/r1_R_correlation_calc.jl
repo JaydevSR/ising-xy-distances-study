@@ -82,7 +82,7 @@ end
 axislegend(ax, position = :rb)
 axislegend(ax2, position = :rb)
 
-location_plot = "results/xy/r1_R_correlation_plot.pdf"
+location_plot = "results/xy/r1_R_correlation_plot_v2.pdf"
 location_data = "results/xy/"
 
 open(location_data*"corr_data.txt", "w") do io
