@@ -3,9 +3,9 @@ include("../../src/spinmc.jl")
 basepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
 println("Using data from: $basepath")
 
-Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.975, 1.0, 1.01, 1.025, 1.04, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5]
+Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.975, 1.0, 1.005, 1.01, 1.015, 1.025, 1.04, 1.05, 1.075, 1.1, 1.15, 1.2, 1.25, 1.3, 1.4, 1.5]
 
-Nvals = [10, 20, 30, 40, 50, 60]
+Nvals = [60] #[10, 20, 30, 40, 50, 60]
 n_samples = 1000
 
 for N in Nvals

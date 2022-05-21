@@ -7,7 +7,7 @@ using ScikitLearn
 basepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
 println("Using data from: $basepath")
 
-Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.975, 1.0, 1.01, 1.025, 1.04, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5]
+Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.01, 1.025, 1.04, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5]
 
 Nvals = [10, 20, 30, 40, 50, 60]
 n_samples = 1000
@@ -82,7 +82,7 @@ end
 axislegend(ax, position = :rb)
 axislegend(ax2, position = :rb)
 
-location_plot = "results/xy/r1_R_correlation_plot_v2.pdf"
+location_plot = "results/xy/r1_R_correlation_plot_v3.pdf"
 location_data = "results/xy/"
 
 open(location_data*"corr_data.txt", "w") do io

@@ -1,6 +1,7 @@
 using DelimitedFiles
-# using Plots
 using CairoMakie
+using GLM
+using DataFrames
 
 data_path = "D:/Projects/DQCM (Dr. Heyl)/montecarlo-spin-configurations-and-distances-study/results/xy/"
 
@@ -26,6 +27,21 @@ println(T_star_arr)
 
 scatter_points = Point2f.(ln_arr, T_star_arr)
 scatter!(ax, scatter_points, marker=:diamond, color=:red, markersize=14)
-xlims!(ax, (0, 0.125))
-ylims!(ax, (0.85, 1.15))
-save(location_plot*"T_star_scaling_plot.pdf", f)
+xlims!(ax, (0, 0.2))
+ylims!(ax, (0.85, 1.3))
+
+data_all = DataFrame(X=ln_arr, Y=T_star_arr)
+data_partial = DataFrame(X=ln_arr[2:end], Y=T_star_arr[2:end])
+
+ols1 = lm(@formula(Y~X), data_all)
+ols2 = lm(@formula(Y~X), data_partial)
+
+y_reg_1 = coef(ols1)[2].*append!([0.0], ln_arr, [0.2]) .+ coef(ols1)[1]
+y_reg_2 = coef(ols2)[2].*append!([0.0], ln_arr, [0.2]) .+ coef(ols2)[1]
+
+lines!(ax, Point2f.(append!([0.0], ln_arr, [0.2]), y_reg_1), label="liner fit", color=:black)
+lines!(ax, Point2f.(append!([0.0], ln_arr, [0.2]), y_reg_2), label="liner fit (removing outlier)", color=:blue)
+axislegend(ax, position=:lt)
+
+save(location_plot*"T_star_scaling_plot_regression_3.pdf", f)
+

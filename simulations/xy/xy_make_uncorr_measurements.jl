@@ -15,8 +15,8 @@ include("../../src/spinmc.jl")
 
 root_location = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
 
-Temps = [0.975, 1.01, 1.04]
-τvals = [60, 60, 60]
+Temps = [1.005, 1.015, 1.15, 1.25]
+τvals = [60, 60, 70, 80]
 
 lattice_sizes = [10, 20, 30, 40, 50, 60]
 eqsteps = 2000
