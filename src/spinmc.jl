@@ -3,6 +3,7 @@ using JLD2
 using Statistics
 using SpecialFunctions
 using DelimitedFiles
+using Random
 
 include("ising.jl")
 include("xy.jl")

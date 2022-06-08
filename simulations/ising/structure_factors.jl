@@ -1,4 +1,4 @@
-include("../../src/spinmc.jl")
+include("../src/spinmc.jl")
 
 basepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
 println("Using data from: $basepath")

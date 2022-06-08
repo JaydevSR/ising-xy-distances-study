@@ -30,7 +30,7 @@ function isingmetro_accept(ΔE, T)
     # Metropolis Acceptance Rates
     if ΔE <= 0
         return true
-    elseif rand() < exp(-ΔE / T)
+    elseif rand(MersenneTwister()) < exp(-ΔE / T)
         return true
     else
         return false
@@ -76,6 +76,7 @@ Generates a cluster in the Ising lattice `spins` at site `seed` with neighbour s
 """
 function isingwolff_get_cluster!(spins, seed, P_add)
     cluster = falses(size(spins))
+    N=size(spins)[1]
     sval = spins[seed...]
     stack = [seed]
     cluster[seed...] = true
@@ -84,7 +85,7 @@ function isingwolff_get_cluster!(spins, seed, P_add)
         for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-            if spins[nn...] == sval && !cluster[nn...] && rand() < P_add
+            if spins[nn...] == sval && !cluster[nn...] && rand(MersenneTwister()) < P_add
                 push!(stack, nn)
                 cluster[nn...] = true
             end

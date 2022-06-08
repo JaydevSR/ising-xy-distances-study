@@ -5,7 +5,7 @@ Perform one step of Wolff algorithm for XY model (lattice `spins` of size `(N, N
 """
 function xywolff_step!(spins::Matrix, N::Int64, T::Float64)
     seed = rand(1:N, 2)  # seed spin position
-    u_flip = rand()  # Random unit vector in xy plane
+    u_flip = rand(MersenneTwister())  # Random unit vector in xy plane
     xywolff_cluster_update!(spins, seed, u_flip, T)
 end
 
@@ -28,7 +28,7 @@ function xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Flo
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
             nnval = spins[nn...]
-            if !cluster[nn...] && rand() < xywolff_Padd(u_flip, nnval, kval, T)
+            if !cluster[nn...] && rand(MersenneTwister()) < xywolff_Padd(u_flip, nnval, kval, T)
                 push!(stack, nn)
                 cluster[nn...] = true
             end
