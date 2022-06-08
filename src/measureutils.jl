@@ -53,45 +53,39 @@ function ising_getconfigdata_to_txt(
     autocorr_times::AbstractArray{Int64}=ones(Int64, length(Temps));
     store_at::AbstractString="",
     wolff::Bool=true,
-    from_infinity::Bool=false
+    from_infinity::Bool=false,
+    verbose=true
     )
     current_loc = pwd()
     cd(store_at)
     for N in lattice_sizes
-        println(".==================================")
-        println("| Lattice Size: $(N) x $(N)        ")
-        println(".==================================")
-        println("|  ")
-        if from_infinity
-            spins = rand([1.0, -1.0], (N, N))
-        else
-            spins = fill(1.0, (N, N))
-        end
-        spin_start = copy(spins)
+        verbose && println(".==================================")
+        verbose && println("| Lattice Size: $(N) x $(N)        ")
+        verbose && println(".==================================")
+        verbose && println("|  ")
+
         isdir("Size$N") ? 1 : mkdir("Size$N")
         cd("Size$N")
         Threads.@threads for stepT in 1:length(Temps)
-            global spins = copy(spin_start)
             location="ising_uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
-
-            file = open(location, "w")
             T = Temps[stepT]
-            println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
-    
+            verbose && println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
+            if from_infinity
+                spins = rand([1.0, -1.0], (N, N))
+            else
+                spins = fill(1.0, (N, N))
+            end
             ising_equilibrate_system!(spins, T, eqsteps; wolff=wolff)
-
             τ = autocorr_times[stepT]
             uncorrelated_spins = ising_getuncorrconfigs!(spins, T, τ, n_uncorr; wolff=wolff)
-            
             open(location, "w") do io
                 writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
             end;
-
-            println("| Process complete on thread #$(Threads.threadid()): T = $T")
+            verbose && println("| Process complete on thread #$(Threads.threadid()): T = $T")
         end
         cd(store_at)
-        println("Done.")
-        println("------------------------------------------------\n")
+        verbose && println("Done.")
+        verbose && println(".==================================")
     end
     cd(current_loc)
     nothing
@@ -99,8 +93,8 @@ end
 
 function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false)
     N = size(spins)[1]
-    twice_τ = 2*τ
-    nsteps = twice_τ*n_uncorr
+    ten_τ = 2*τ
+    nsteps = ten_τ*n_uncorr
     uncorrelated_spins = zeros(Float64, (N, N, n_uncorr))
     # uncorrelated measurements
     E0, M0 = ising_total_energy(spins), ising_total_magnetization(spins)
@@ -109,8 +103,8 @@ function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false)
         P_add = isingwolff_Padd(T)
         for j=1:nsteps
             isingwolff_step!(spins, P_add)
-            if j%twice_τ == 0
-                uncorrelated_spins[:, :, j÷twice_τ] = spins
+            if j%ten_τ == 0
+                uncorrelated_spins[:, :, j÷ten_τ] = spins
             end
         end
     else
@@ -125,8 +119,8 @@ function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false)
 end
 
 function ising_getcorrtime(
-    N::Int64, T::Float64, msteps=50000, wsteps=1000;
-    wolff=false, from_infinity::Bool=false
+    N::Int64, T::Float64, msteps=10000, wsteps=250;
+    wolff=false, from_infinity::Bool=false, eqsteps=1000
     )
     if from_infinity
         spins = rand([1.0, -1.0], (N, N))
@@ -134,15 +128,22 @@ function ising_getcorrtime(
         spins = fill(1.0, (N, N))
     end
     mags = zeros(Float64, msteps)
-    E0 = ising_total_energy(spins)
-    mags[1] = ising_total_magnetization(spins)
     if wolff
         P_add = isingwolff_Padd(T)
+        for i in 1:eqsteps
+            isingwolff_step!(spins, P_add)
+        end
+        mags[1] = ising_total_magnetization(spins)
         for i in 1:msteps-1
             isingwolff_step!(spins, P_add)
             mags[i+1] = ising_total_magnetization(spins)
         end
     else
+        E0 = ising_total_energy(spins)
+        mags[1] = ising_total_magnetization(spins)
+        for i in 1:eqsteps
+            E0, mags[1] = isingmetro_step!(spins, T, E0, mags[i])
+        end
         for i in 1:msteps-1
             E0, mags[i+1] = isingmetro_step!(spins, T, E0, mags[i])
         end
@@ -158,38 +159,13 @@ end
 
 function ising_getcorrtime(
     N::Int64, Temps::Vector{Float64}, msteps=50000, wsteps=1000;
-    wolff=false, from_infinity::Bool=false, verbose::Bool=false
+    wolff=false, from_infinity::Bool=false, verbose::Bool=false, eqsteps=1000
     )
     corr_times = zeros(Int64, length(Temps))
     Threads.@threads for i=eachindex(Temps)
         T = Temps[i]
         verbose && println("> Process strarted on thread #$(Threads.threadid()): T = $(T)")
-        if from_infinity
-            spins = rand([1.0, -1.0], (N, N))
-        else
-            spins = fill(1.0, (N, N))
-        end
-        mags = zeros(Float64, msteps)
-        E0 = ising_total_energy(spins)
-        mags[1] = ising_total_magnetization(spins)
-        if wolff
-            P_add = isingwolff_Padd(T)
-            for i in 1:msteps-1
-                isingwolff_step!(spins, P_add)
-                mags[i+1] = ising_total_magnetization(spins)
-            end
-        else
-            for i in 1:msteps-1
-                E0, mags[i+1] = isingmetro_step!(spins, T, E0, mags[i])
-            end
-        end
-        
-        @. mags /= N^2
-        corrfn = autocorrelation_fn(mags)
-    
-        # Measure the integrated correlation time in a small window
-        τ = corrfn[1:wsteps] |> sum |> ceil
-        corr_times[i] = convert(Int64, τ)
+        corr_times[i] = ising_getcorrtime(N, T, msteps, wsteps; wolff=wolff, from_infinity=from_infinity, eqsteps=eqsteps)
         verbose && println("> Process complete on thread #$(Threads.threadid()): T = $T")
     end
     verbose && println("Results: $corr_times")
