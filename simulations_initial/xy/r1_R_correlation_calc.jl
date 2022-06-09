@@ -4,12 +4,12 @@ using ScikitLearn
 
 @sk_import neighbors: NearestNeighbors
 
-basepath = "D:/Projects/DQCM (Dr. Heyl)/cluster_data/data/xy/"
+basepath = "D:/Projects/Dr. Heyl Group/cluster_data/data/xy/"
 println("Using data from: $basepath")
 
 Temps = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.01, 1.025, 1.04, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5]
 
-Nvals = [10, 20, 30, 40, 50, 60]
+Nvals = [10, 20, 30]
 n_samples = 1000
 xcomp=true
 ycomp=true
@@ -65,7 +65,7 @@ for stepN in 1:length(Nvals)
         struc_facs = struc_facs_store[Temps[stepT]]
         println("   |   > Done.")
 
-        corr_arr[stepT] = mean(dists.*struc_facs) - mean(dists)*mean(struc_facs)
+        corr_arr[stepT] = mean(dists[:, 2].*struc_facs) - mean(dists[:, 2])*mean(struc_facs)
     end
 
     println("   |   > Adding Plot ...")
@@ -82,20 +82,20 @@ end
 axislegend(ax, position = :rb)
 axislegend(ax2, position = :rb)
 
-location_plot = "results/xy/r1_R_correlation_plot_v3.pdf"
+location_plot = "results/xy/r1_R_correlation_plot_vfuck.pdf"
 location_data = "results/xy/"
 
-open(location_data*"corr_data.txt", "w") do io
-    writedlm(io, corr_data, ',')
-end;
+# open(location_data*"corr_data.txt", "w") do io
+#     writedlm(io, corr_data, ',')
+# end;
 
-open(location_data*"corr_Nvals.txt", "w") do io
-    writedlm(io, Nvals, ',')
-end;
+# open(location_data*"corr_Nvals.txt", "w") do io
+#     writedlm(io, Nvals, ',')
+# end;
 
-open(location_data*"corr_Temps.txt", "w") do io
-    writedlm(io, Temps, ',')
-end;
+# open(location_data*"corr_Temps.txt", "w") do io
+#     writedlm(io, Temps, ',')
+# end;
 
 println("Saving Plots")
 save(location_plot, f)

@@ -93,12 +93,10 @@ end
 
 function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false)
     N = size(spins)[1]
-    ten_τ = 2*τ
+    ten_τ = 10*τ
     nsteps = ten_τ*n_uncorr
     uncorrelated_spins = zeros(Float64, (N, N, n_uncorr))
     # uncorrelated measurements
-    E0, M0 = ising_total_energy(spins), ising_total_magnetization(spins)
-
     if wolff
         P_add = isingwolff_Padd(T)
         for j=1:nsteps
@@ -108,6 +106,7 @@ function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false)
             end
         end
     else
+        E0, M0 = ising_total_energy(spins), ising_total_magnetization(spins)
         for j in 1:nsteps
             E0, M0 = isingmetro_step!(spins, T, E0, M0)
             if j%twice_τ == 0

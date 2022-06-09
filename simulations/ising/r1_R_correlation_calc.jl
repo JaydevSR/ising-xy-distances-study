@@ -1,13 +1,9 @@
 include("../../src/spinmc.jl")
 
-using ScikitLearn
-
-@sk_import neighbors: NearestNeighbors
-
 basepath = "D:/Projects/Dr. Heyl Group/data/ising/"
 println("Using data from: $basepath")
 
-Temps = [2.0, 2.1, 2.2, 2.24, 2.26, 2.265, 2.27, 2.275, 2.28, 2.3, 2.4]
+Temps = [1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
 
 Nvals = [16, 24, 32, 48, 64]
 n_samples = 5000
@@ -26,37 +22,26 @@ for stepN in 1:length(Nvals)
     println("Calculating For N=$(N) ...")
     corr_arr = zeros(Float64, length(Temps))
     
-    struc_facs_store = Dict([(struc_facs_store[i, 1], struc_facs_store[i, 2:end]) for i=1:size(struc_facs_store)[1]])
-    
-    Threads.@threads for stepT in eachindex(Temps)
+    for stepT in eachindex(Temps)
         T = Temps[stepT]
-        println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
-        datafile = basepath*"Size$(N)/ising_uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
-        if !isfile(datafile)
-            println("| No Measurement Data Found (T=$(T)).")
+
+        fnn_dists_store = basepath*"fnn_dists/Size$N/fnn_dists_Temp$(T)_N$(N).txt"
+        if !isfile(fnn_dists_store)
+            println("| No FNN Distance Data Found (T=$(T)).")
             println("| Process ended on thread #$(Threads.threadid()): T = $(T)")
             continue
         end
+        fnn_dists = readdlm(fnn_dists_store, ',', Float64)
     
-        uncorrelated_spins = reshape(readdlm(datafile, ',', Float64), N, N, :)
-    
-        # fit the kNN algorithm to uncorrelated spin configs
-        model = NearestNeighbors(n_neighbors = 2, algorithm = "ball_tree")
-        configs_vec = [reshape(uncorrelated_spins[:, :, i], N * N) for i = 1:size(uncorrelated_spins)[3]]
-        nnbrs = fit!(model, configs_vec)  # Ignore warning 
-    
-        # calculate distances
-        dists, idxs = NearestNeighbors.kneighbors(nnbrs, configs_vec)
-    
-        struc_facs_store = basepath*"struc_facs/Size$N/struc_facs_Temps$T_N$(N).txt"
+        struc_facs_store = basepath*"struc_facs/Size$N/struc_facs_Temp$(T)_N$(N).txt"
         if !isfile(struc_facs_store)
             println("| No Structure Factor Data Found (T=$(T)).")
             println("| Process ended on thread #$(Threads.threadid()): T = $(T)")
             continue
         end
-
         struc_facs = readdlm(struc_facs_store, ',', Float64)
-        corr_arr[stepT] = mean(dists.*struc_facs) - mean(dists)*mean(struc_facs)
+
+        corr_arr[stepT] = mean(fnn_dists.*struc_facs) - mean(fnn_dists)*mean(struc_facs)
         println("| Process completed on thread #$(Threads.threadid()): T = $(T)")
     end
 
