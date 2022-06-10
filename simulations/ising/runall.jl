@@ -1,3 +1,5 @@
+include("make_uncorr_measurements.jl")
+
 include("first_nn_dists.jl")
 
 include("test.jl")

@@ -5,8 +5,8 @@ println("Using data from: $basepath")
 
 Temps = [1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
 
-Nvals = [16, 24, 32, 48, 64]
-n_samples = 5000
+Nvals = [16, 24, 32, 48]
+n_samples = 2000
 
 f = Figure(resolution = (1200, 800))
 ax = Axis(f[1, 1], xlabel = "T", ylabel = "C (scaled by nsites)", title = "Correlation between r₁ and Ns*R with temperature")
@@ -61,7 +61,7 @@ end
 axislegend(ax, position = :rb)
 axislegend(ax2, position = :rb)
 
-location_plot = "results/ising/r1_R_correlation_plot_v1.pdf"
+location_plot = "results/ising/r1_R_correlation_plot_v1_metro.pdf"
 
 open(basepath*"r1_R_corr_data.txt", "w") do io
     writedlm(io, corr_data, ',')

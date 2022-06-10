@@ -11,7 +11,7 @@ Temps = collect(1.4:0.2:3.6)
 corr_times = zeros(Int64, length(Temps))
 
 eqsteps = 2000  # Steps for equilibration
-msteps = 6000  # Steps for measurements
+msteps = 20000  # Steps for measurements
 
 for N in lattice_sizes
     println("Calculating correlation times for $(N)x$(N) ...")
@@ -26,20 +26,23 @@ for N in lattice_sizes
         # Equilibration
         E0, M0 = ising_total_energy(spins), ising_total_magnetization(spins)
         for i in 1:eqsteps
-            E0, M0 = isingmetro_step!(spins, T, E0, M0)
+            # E0, M0 = isingmetro_step!(spins, T, E0, M0)
+            isingwolff_step!(spins, isingwolff_Padd(T))
         end
         
         mags = zeros(Float64, msteps)
-        mags[1] = M0
+        mags[1] = ising_total_magnetization(spins)
         for i in 1:msteps-1
-            E0, mags[i+1] = isingmetro_step!(spins, T, E0, mags[i])
+            # E0, mags[i+1] = isingmetro_step!(spins, T, E0, mags[i])
+            isingwolff_step!(spins, isingwolff_Padd(T))
+            mags[i+1] = ising_total_magnetization(spins) 
         end
         
         @. mags /= N^2
-        corrfn = autocorrelation_fn(mags)
+        corrfn = autocorrelation_fn(abs.(mags))
 
         # Measure the integrated correlation time in a small window
-        corr_times[stepT] = ceil(Int64, sum(corrfn[1:200]))
+        corr_times[stepT] = ceil(Int64, abs(sum(corrfn[1:1000])))
 
         println("   | Done (τ=$(corr_times[stepT])).")
     end

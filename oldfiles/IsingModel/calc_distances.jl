@@ -5,7 +5,7 @@ using Statistics
 
 @sk_import neighbors: NearestNeighbors
 
-lattice_sizes = [10, 20, 30, 40, 50]
+lattice_sizes = [10, 20]
 
 # open file for reading configurations
 data = jldopen("oldfiles/IsingModel/data/isingdata.jld2", "r")
@@ -42,42 +42,42 @@ println("Generating Plots ...")
 # For 1st NN distance
 let N=lattice_sizes[1]
     plot_data = distance_data["$(N)"]
-    plot(first.(plot_data), [plot_data[i][2] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
+    Plots.plot(first.(plot_data), [plot_data[i][2] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
 end
 for N in lattice_sizes[2:end]
     plot_data = distance_data["$(N)"]
-    plot!(first.(plot_data), [plot_data[i][2] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
+    Plots.plot!(first.(plot_data), [plot_data[i][2] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
 end
-xlabel!("Temperature")
-ylabel!("r1")
-title!("First NN distance with temperature")
-savefig("plots/first_nn_ising.png")
+Plots.xlabel!("Temperature")
+Plots.ylabel!("r1")
+Plots.title!("First NN distance with temperature")
+savefig("oldfiles/IsingModel/plots/first_nn_ising2.png")
 
 # For 2nd NN distance
-let N=lattice_sizes[1]
-    plot_data = distance_data["$(N)"]
-    plot(first.(plot_data), [plot_data[i][3] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
-end
-for N in lattice_sizes[2:end]
-    plot_data = distance_data["$(N)"]
-    plot!(first.(plot_data), [plot_data[i][3] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
-end
-xlabel!("Temperature")
-ylabel!("r2")
-title!("Second NN distance with temperature")
-savefig("plots/second_nn_ising.png")
+# let N=lattice_sizes[1]
+#     plot_data = distance_data["$(N)"]
+#     Plots.plot(first.(plot_data), [plot_data[i][3] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
+# end
+# for N in lattice_sizes[2:end]
+#     plot_data = distance_data["$(N)"]
+#     Plots.plot!(first.(plot_data), [plot_data[i][3] for i=1:length(plot_data)], label="N=$(N)", markershape=:diamond)
+# end
+# Plots.xlabel!("Temperature")
+# Plots.ylabel!("r2")
+# Plots.title!("Second NN distance with temperature")
+# savefig("oldfiles/IsingModel/plots/second_nn_ising2.png")
 
 
-# for comparing 1st and 2nd NN distances
-let N=10
-    plot_data = distance_data["$(N)"]
-    plot(first.(plot_data), [plot_data[i][2] for i=1:length(plot_data)], label="r1", markershape=:diamond)
-    plot!(first.(plot_data), [plot_data[i][3] for i=1:length(plot_data)], label="r2", markershape=:diamond)
-end
-xlabel!("Temperature")
-ylabel!("distances")
-title!("First and Second NN distance with T (N=10)")
-savefig("plots/first_second_nn_ising_10.png")
+# # for comparing 1st and 2nd NN distances
+# let N=10
+#     plot_data = distance_data["$(N)"]
+#     plot(first.(plot_data), [plot_data[i][2] for i=1:length(plot_data)], label="r1", markershape=:diamond)
+#     plot!(first.(plot_data), [plot_data[i][3] for i=1:length(plot_data)], label="r2", markershape=:diamond)
+# end
+# xlabel!("Temperature")
+# ylabel!("distances")
+# title!("First and Second NN distance with T (N=10)")
+# savefig("plots/first_second_nn_ising_10.png")
 
 println("Done.")
 

@@ -54,7 +54,8 @@ function ising_getconfigdata_to_txt(
     store_at::AbstractString="",
     wolff::Bool=true,
     from_infinity::Bool=false,
-    verbose=true
+    verbose=true,
+    ntau=2
     )
     current_loc = pwd()
     cd(store_at)
@@ -66,10 +67,10 @@ function ising_getconfigdata_to_txt(
 
         isdir("Size$N") ? 1 : mkdir("Size$N")
         cd("Size$N")
-        Threads.@threads for stepT in 1:length(Temps)
+        for stepT in 1:length(Temps)
             location="ising_uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
             T = Temps[stepT]
-            verbose && println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
+            verbose && println("| Process strarted: T = $(T)")
             if from_infinity
                 spins = rand([1.0, -1.0], (N, N))
             else
@@ -77,11 +78,11 @@ function ising_getconfigdata_to_txt(
             end
             ising_equilibrate_system!(spins, T, eqsteps; wolff=wolff)
             τ = autocorr_times[stepT]
-            uncorrelated_spins = ising_getuncorrconfigs!(spins, T, τ, n_uncorr; wolff=wolff)
+            uncorrelated_spins = ising_getuncorrconfigs!(spins, T, τ, n_uncorr; wolff=wolff, ntau=ntau)
             open(location, "w") do io
                 writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
             end;
-            verbose && println("| Process complete on thread #$(Threads.threadid()): T = $T")
+            verbose && println("| Process complete: T = $T")
         end
         cd(store_at)
         verbose && println("Done.")
@@ -91,26 +92,26 @@ function ising_getconfigdata_to_txt(
     nothing
 end
 
-function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false)
+function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false, ntau=5)
     N = size(spins)[1]
-    ten_τ = 10*τ
-    nsteps = ten_τ*n_uncorr
+    ntau_τ = ntau*τ
+    nsteps = ntau_τ*n_uncorr
     uncorrelated_spins = zeros(Float64, (N, N, n_uncorr))
     # uncorrelated measurements
     if wolff
         P_add = isingwolff_Padd(T)
         for j=1:nsteps
             isingwolff_step!(spins, P_add)
-            if j%ten_τ == 0
-                uncorrelated_spins[:, :, j÷ten_τ] = spins
+            if j%ntau_τ == 0
+                uncorrelated_spins[:, :, j÷ntau_τ] = spins
             end
         end
     else
         E0, M0 = ising_total_energy(spins), ising_total_magnetization(spins)
         for j in 1:nsteps
             E0, M0 = isingmetro_step!(spins, T, E0, M0)
-            if j%twice_τ == 0
-                uncorrelated_spins[:, :, j÷twice_τ] = spins
+            if j%ntau_τ == 0
+                uncorrelated_spins[:, :, j÷ntau_τ] = spins
             end
         end
     end
@@ -118,7 +119,7 @@ function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false)
 end
 
 function ising_getcorrtime(
-    N::Int64, T::Float64, msteps=10000, wsteps=250;
+    N::Int64, T::Float64, msteps=6000, wsteps=250;
     wolff=false, from_infinity::Bool=false, eqsteps=1000
     )
     if from_infinity
@@ -161,11 +162,11 @@ function ising_getcorrtime(
     wolff=false, from_infinity::Bool=false, verbose::Bool=false, eqsteps=1000
     )
     corr_times = zeros(Int64, length(Temps))
-    Threads.@threads for i=eachindex(Temps)
+    for i=eachindex(Temps)
         T = Temps[i]
-        verbose && println("> Process strarted on thread #$(Threads.threadid()): T = $(T)")
+        verbose && println("> Process strarted: T = $(T)")
         corr_times[i] = ising_getcorrtime(N, T, msteps, wsteps; wolff=wolff, from_infinity=from_infinity, eqsteps=eqsteps)
-        verbose && println("> Process complete on thread #$(Threads.threadid()): T = $T")
+        verbose && println("> Process complete: T = $T, τ=$(corr_times[i])")
     end
     verbose && println("Results: $corr_times")
     return corr_times

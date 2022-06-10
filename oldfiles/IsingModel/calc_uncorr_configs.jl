@@ -4,10 +4,10 @@ using JLD2
 include("../../src/spinmc.jl")
 
 # Open file in read + append
-isingdata = jldopen("data/isingdata.jld2", "a+")
+isingdata = jldopen("oldfiles/IsingModel/data/isingdata.jld2", "w")
 
 # Simulation Parameters
-lattice_sizes = [10, 20, 30, 40, 50]
+lattice_sizes = [10, 20]
 eqsteps = 2000  # Steps for equilibration
 N_uncorr = 100  # Number of uncorrelated measurements
 
@@ -18,8 +18,8 @@ for N in lattice_sizes
     spins = spins = rand([-1.0, 1.0], (N, N))
     uncorrelated_spins = zeros(N, N, N_uncorr)
 
-    corr_time_data = isingdata["$(N)x$(N)/corr_times"]
-    temps, corr_times = first.(corr_time_data), last.(corr_time_data)
+    # corr_time_data = isingdata["$(N)x$(N)/corr_times"]
+    temps, corr_times = collect(1.4:0.2:3.6), fill(4, length(collect(1.4:0.2:3.6)))
 
     # measure configs at 2τ
     measure_times = 2 .* corr_times
@@ -32,7 +32,8 @@ for N in lattice_sizes
         # equilibration
         E0, M0 = ising_total_energy(spins), ising_total_magnetization(spins)
         for i in 1:eqsteps
-            E0, M0 = isingmetro_step!(spins, T, E0, M0)
+            #E0, M0 = isingmetro_step!(spins, T, E0, M0)
+            isingwolff_step!(spins, isingwolff_Padd(T))
         end
     
         twice_τ = measure_times[stepT]
@@ -40,7 +41,8 @@ for N in lattice_sizes
         
         # uncorrelated measurements
         for j in 1:nsteps
-            E0, M0 = isingmetro_step!(spins, T, E0, M0)
+            #E0, M0 = isingmetro_step!(spins, T, E0, M0)
+            isingwolff_step!(spins, isingwolff_Padd(T))
             if j%twice_τ == 0
                 uncorrelated_spins[:, :, j÷twice_τ] = spins
             end
