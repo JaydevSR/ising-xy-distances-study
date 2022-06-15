@@ -67,10 +67,10 @@ function ising_getconfigdata_to_txt(
 
         isdir("Size$N") ? 1 : mkdir("Size$N")
         cd("Size$N")
-        for stepT in 1:length(Temps)
+        Threads.@threads for stepT in 1:length(Temps)
             location="ising_uncorr_configs_Temp$(Temps[stepT])_N$(N).txt"
             T = Temps[stepT]
-            verbose && println("| Process strarted: T = $(T)")
+            verbose && println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
             if from_infinity
                 spins = rand([1.0, -1.0], (N, N))
             else
@@ -82,7 +82,7 @@ function ising_getconfigdata_to_txt(
             open(location, "w") do io
                 writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
             end;
-            verbose && println("| Process complete: T = $T")
+            verbose && println("| Process complete on thread #$(Threads.threadid()): T = $T")
         end
         cd(store_at)
         verbose && println("Done.")
@@ -162,11 +162,11 @@ function ising_getcorrtime(
     wolff=false, from_infinity::Bool=false, verbose::Bool=false, eqsteps=1000
     )
     corr_times = zeros(Int64, length(Temps))
-    for i=eachindex(Temps)
+    Threads.@threads for i=eachindex(Temps)
         T = Temps[i]
-        verbose && println("> Process strarted: T = $(T)")
+        verbose && println("> Process strarted on thread #$(Threads.threadid()): T = $(T)")
         corr_times[i] = ising_getcorrtime(N, T, msteps, wsteps; wolff=wolff, from_infinity=from_infinity, eqsteps=eqsteps)
-        verbose && println("> Process complete: T = $T, τ=$(corr_times[i])")
+        verbose && println("> Process complete on thread #$(Threads.threadid()): T = $T, τ=$(corr_times[i])")
     end
     verbose && println("Results: $corr_times")
     return corr_times

@@ -1,19 +1,13 @@
 include("../../src/spinmc.jl")
 
-# using NearestNeighbors
-
-using ScikitLearn
-
-@sk_import neighbors: NearestNeighbors
-
 basepath = "D:/Projects/Dr. Heyl Group/data/ising/"
 println("Using data from: $basepath")
 
-# Temps = [2.0, 2.1, 2.2, 2.24, 2.26, 2.265, 2.27, 2.275, 2.28, 2.3, 2.4]
 Temps = [1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
-
-
 Nvals = [16, 24, 32, 48]
+
+# using NearestNeighbors
+
 # for N in Nvals
 #     @time begin
 #         println("Calculating For N=$(N) ...")
@@ -40,6 +34,11 @@ Nvals = [16, 24, 32, 48]
 #         end        
 #     end
 # end
+
+
+using ScikitLearn
+
+@sk_import neighbors: NearestNeighbors
 
 for N in Nvals
     @time begin
