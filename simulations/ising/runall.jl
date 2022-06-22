@@ -1,10 +1,10 @@
-# include("make_uncorr_measurements.jl")
+include("make_uncorr_measurements.jl")
 
-# include("test2.jl")
+include("test2.jl")
 
-include("first_nn_dists.jl")
+# include("first_nn_dists.jl")
 
-include("test.jl")
+# include("test.jl")
 
 # include("structure_factors.jl")
 
