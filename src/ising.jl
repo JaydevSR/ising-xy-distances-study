@@ -58,36 +58,51 @@ end
 
 Performs one cluster flip of the Ising lattice `spins` with selection probability `P_add`.
 """
-function isingwolff_step!(spins, P_add)
-    N = size(spins)[1]
+function isingwolff_step!(N, spins, P_add)
+    nbrs = [[1, 0], [N - 1, 0],
+            [0, 1], [0, N - 1]]
     seed = rand(1:N, 2)  # seed spin position
-    cluster = isingwolff_get_cluster!(spins, seed, P_add)
-
-    ΔM = -2 * spins[seed...] * sum(cluster)
-    # flip cluster
-    @. spins = ifelse(cluster, -spins, spins)
-    return ΔM
-end
-
-"""
-    isingwolff_get_cluster!(spins, seed, P_add)
-
-Generates a cluster in the Ising lattice `spins` at site `seed` with neighbour selection probability `P_add`.
-"""
-function isingwolff_get_cluster!(spins, seed, P_add)
+    stack = []
+    sizehint!(stack, N*N)
+    push!(stack, seed)
     cluster = falses(size(spins))
-    N=size(spins)[1]
-    sval = spins[seed...]
-    stack = [seed]
-    cluster[seed...] = true
+    @inbounds sval = spins[seed...]
+    @inbounds cluster[seed...] = true
     while !isempty(stack)
         k = pop!(stack)
-        for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
+        @inbounds spins[k...] = -spins[k...]
+        for δ ∈ nbrs
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
             if spins[nn...] == sval && !cluster[nn...] && rand() < P_add
                 push!(stack, nn)
-                cluster[nn...] = true
+                @inbounds cluster[nn...] = true
+            end
+        end
+    end
+    # ΔM = 2 * spins[seed...] * sum(cluster)
+    # return ΔM
+    nothing
+end
+
+"""
+    isingwolff_get_cluster!(N, spins, seed, P_add)
+
+Generates a cluster in the Ising lattice `spins` at site `seed` with neighbour selection probability `P_add`.
+"""
+function isingwolff_get_cluster!(N, spins, seed, P_add, nbrs)
+    cluster = falses(size(spins))
+    @inbounds sval = spins[seed...]
+    stack = [seed]
+    @inbounds cluster[seed...] = true
+    while !isempty(stack)
+        k = pop!(stack)
+        for δ ∈ nbrs
+            nn = k + δ
+            @. nn = mod1(nn, N)  # Apply periodic boundary conditions
+            if spins[nn...] == sval && !cluster[nn...] && rand() < P_add
+                push!(stack, nn)
+                @inbounds cluster[nn...] = true
             end
         end
     end
