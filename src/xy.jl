@@ -3,10 +3,11 @@
 
 Perform one step of Wolff algorithm for XY model (lattice `spins` of size `(N, N)` at temperature `T`).
 """
-function xywolff_step!(spins::Matrix, N::Int64, T::Float64)
+function xywolff_step!(N::Int, spins::Matrix, T::Float64)
     seed = rand(1:N, 2)  # seed spin position
     u_flip = rand()  # Random unit vector in xy plane
-    xywolff_cluster_update!(spins, seed, u_flip, T)
+    nbrs = [[1, 0], [N - 1, 0], [0, 1], [0, N - 1]]
+    xywolff_cluster_update!(N, spins, seed, u_flip, T, nbrs)
 end
 
 """
@@ -14,23 +15,24 @@ end
 
 Build a cluster among `spins` starting at `seed` at temperature `T`. Flip the cluster w.r.t angle `u_flip`.
 """
-function xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T::Float64)
+function xywolff_cluster_update!(N, spins::Matrix, seed::AbstractArray, u_flip::Float64, T::Float64, nbrs)
+    stack = []
+    sizehint!(stack, N*N)
+    push!(stack, seed)
     cluster = falses(size(spins))
-    sval = spins[seed...]
-    stack = [seed]
-    cluster[seed...] = true
-    N = size(spins)[1]
+    @inbounds sval = spins[seed...]
+    @inbounds cluster[seed...] = true
     while !isempty(stack)
         k = pop!(stack)
-        kval = spins[k...]
+        @inbounds kval = spins[k...]
         xywolff_flip_spin!(spins, k, u_flip)
-        @inbounds for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
+        for δ ∈ nbrs
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-            nnval = spins[nn...]
+            @inbounds nnval = spins[nn...]
             if !cluster[nn...] && rand() < xywolff_Padd(u_flip, nnval, kval, T)
                 push!(stack, nn)
-                cluster[nn...] = true
+                @inbounds cluster[nn...] = true
             end
         end
     end
