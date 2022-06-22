@@ -29,10 +29,10 @@ Estimate the error in the given samples by bootstrap method.
 Here, `calc_qty` is the function to calculate the quantity in which error has to be calculated.
 And, `r` is a keyword arguments giving number of resamples.
 """
-function bootstrap_err(samples, calc_qty, args...; r = 100)
+function bootstrap_err(samples, calc_qty, args...; r = 200)
     nob = length(samples)
-    resample_arr = zeros(Float64, nob)
-    for i = 1:r
+    resample_arr = zeros(Float64, r)
+    for i in eachindex(resample_arr)
         resample = rand(samples, nob)
         resample_arr[i] = calc_qty(resample, args...)
     end
@@ -59,6 +59,9 @@ function blocking_err(samples, calc_qty, args...; blocks = 20)
     return err
 end
 
+"""
+Calculate site-site correlation function of given Matrix
+"""
 function ss_correlation_fn(sites::Matrix, N::Int64; metric=*)
     ss_corrs = zeros(Float64, N)
     nsamples = zeros(Float64, N)
