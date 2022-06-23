@@ -1,5 +1,5 @@
 """
-    xywolff_step!(spins::Matrix, N::Int64, T::Float64)
+    xywolff_step!(N::Int64, spins::Matrix, T::Float64)
 
 Perform one step of Wolff algorithm for XY model (lattice `spins` of size `(N, N)` at temperature `T`).
 """

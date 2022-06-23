@@ -23,14 +23,14 @@ function ising_getconfigdata!(
             T = Temps[stepT]
             println("   | Temperature = $(T) ...")
     
-            ising_equilibrate_system!(spins, T, eqsteps; wolff=wolff)
+            ising_equilibrate_system!(N, spins, T, eqsteps; wolff=wolff)
 
             println("   |   | Calculating correlation time ...")
             autocorr_times[stepT] = τ = ising_getcorrtime!(spins, T; wolff=wolff)
             println("   |   | Done.")
 
             println("   |   | Making uncorrelated measurements (τ=$(τ)) ...")
-            uncorrelated_spins = ising_getuncorrconfigs!(spins, T, τ, n_uncorr; wolff=wolff)
+            uncorrelated_spins = ising_getuncorrconfigs!(N, spins, T, τ, n_uncorr; wolff=wolff)
             push!(configs_data, (T, copy(uncorrelated_spins)))
             println("   |   | Done.")
         end
@@ -76,9 +76,9 @@ function ising_getconfigdata_to_txt(
             else
                 spins = fill(1.0, (N, N))
             end
-            ising_equilibrate_system!(spins, T, eqsteps; wolff=wolff)
+            ising_equilibrate_system!(N, spins, T, eqsteps; wolff=wolff)
             τ = autocorr_times[stepT]
-            uncorrelated_spins = ising_getuncorrconfigs!(spins, T, τ, n_uncorr; wolff=wolff, ntau=ntau)
+            uncorrelated_spins = ising_getuncorrconfigs!(N, spins, T, τ, n_uncorr; wolff=wolff, ntau=ntau)
             open(location, "w") do io
                 writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
             end;
@@ -92,8 +92,7 @@ function ising_getconfigdata_to_txt(
     nothing
 end
 
-function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false, ntau=5)
-    N = size(spins)[1]
+function ising_getuncorrconfigs!(N, spins::Matrix, T, τ, n_uncorr; wolff=false, ntau=5)
     ntau_τ = ntau*τ
     nsteps = ntau_τ*n_uncorr
     uncorrelated_spins = zeros(Float64, (N, N, n_uncorr))
@@ -101,7 +100,7 @@ function ising_getuncorrconfigs!(spins::Matrix, T, τ, n_uncorr; wolff=false, nt
     if wolff
         P_add = isingwolff_Padd(T)
         for j=1:nsteps
-            isingwolff_step!(spins, P_add)
+            isingwolff_step!(N, spins, P_add)
             if j%ntau_τ == 0
                 uncorrelated_spins[:, :, j÷ntau_τ] = spins
             end
@@ -131,11 +130,11 @@ function ising_getcorrtime(
     if wolff
         P_add = isingwolff_Padd(T)
         for i in 1:eqsteps
-            isingwolff_step!(spins, P_add)
+            isingwolff_step!(N, spins, P_add)
         end
         mags[1] = ising_total_magnetization(spins)
         for i in 1:msteps-1
-            isingwolff_step!(spins, P_add)
+            isingwolff_step!(N, spins, P_add)
             mags[i+1] = ising_total_magnetization(spins)
         end
     else
@@ -172,12 +171,12 @@ function ising_getcorrtime(
     return corr_times
 end
 
-function ising_equilibrate_system!(spins::Matrix, T, eqsteps; wolff=false)
+function ising_equilibrate_system!(N, spins::Matrix, T, eqsteps; wolff=false)
     E0, M0 = ising_total_energy(spins), ising_total_magnetization(spins)
     if wolff
+        P_add = isingwolff_Padd(T)
         for i in 1:eqsteps
-            P_add = isingwolff_Padd(T)
-            isingwolff_step!(spins, P_add)
+            isingwolff_step!(N, spins, P_add)
         end
     else
         for i in 1:eqsteps
