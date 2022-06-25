@@ -2,20 +2,20 @@ using CairoMakie
 using Statistics
 using DelimitedFiles
 
-Temps = [1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
+basepath = "D:/Projects/Dr. Heyl Group/data/"
 
-Nvals = [16, 24, 32, 48]
-
-basepath = "D:/Projects/Dr. Heyl Group/data/ising/"
+Temps = readdlm(joinpath(basepath, "ising",  "temperature_values.txt"), ',', Float64)[:, 1]
+lattice_sizes = readdlm(joinpath(basepath, "ising", "lattice_sizes.txt"), ',', Int64)[:, 1]
 
 f = Figure()
 ax = Axis(f[1,1], xlabel="temp", ylabel="mean fnn distance")
 
-for N in Nvals
+for N in lattice_sizes
     mean_fnn = zero(Temps)
     for stepT in eachindex(Temps)
         T = Temps[stepT]
-        datafile = basepath*"fnn_dists/Size$N/fnn_dists_Temp$(T)_N$(N).txt"
+        # datafile = basepath*"ising/struc_facs/Size$N/struc_facs_temp$(T)_size$(N).txt"
+        datafile = basepath*"ising/fnn_dists/Size$N/fnn_dists_temp$(T)_size$(N).txt"
         if !isfile(datafile)
             println("| No Data Found (N=$(N), T=$(T)).")
             continue

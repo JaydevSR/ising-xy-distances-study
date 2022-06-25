@@ -1,12 +1,11 @@
 include("../../src/spinmc.jl")
 
-basepath = "D:/Projects/Dr. Heyl Group/data/ising/"
-println("Using data from: $basepath")
+basepath = "D:/Projects/Dr. Heyl Group/data/"
 
-Temps = [1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0]
-
-Nvals = [16, 24, 32, 48]
-n_samples = 2000
+# Temps = readdlm(joinpath(basepath, "ising",  "temperature_values.txt"), ',', Float64)[:, 1]
+# lattice_sizes = readdlm(joinpath(basepath, "ising", "lattice_sizes.txt"), ',', Int64)[:, 1]
+Temps = [1.8, 1.9, 2.0, 2.1, 2.12, 2.14, 2.16, 2.18, 2.2, 2.22, 2.24, 2.26, 2.28, 2.3, 2.32, 2.34, 2.36, 2.38, 2.4, 2.5, 2.6, 2.7]
+lattice_sizes = [32, 48, 64]
 
 f = Figure(resolution = (1200, 800))
 ax = Axis(f[1, 1], xlabel = "T", ylabel = "C (scaled by nsites)", title = "Correlation between râ‚ and Ns*R with temperature")
@@ -15,25 +14,25 @@ ax2 = Axis(f[1, 2], xlabel = "T", ylabel = "C", title = "Correlation between râ‚
 Nmarks = Dict(16 => :circle, 24 => :rect, 32 => :diamond, 48 => :cross, 64 => :xcross)
 Ncols = Dict(16 => :red, 24 => :green, 32 => :blue, 48 => :magenta, 64 => :black)
 
-corr_data = zeros(Float64, (length(Nvals), length(Temps)))
+corr_data = zeros(Float64, (length(lattice_sizes), length(Temps)))
 
-for stepN in 1:length(Nvals)
-    N = Nvals[stepN]
+for stepN in eachindex(lattice_sizes)
+    N = lattice_sizes[stepN]
     println("Calculating For N=$(N) ...")
     corr_arr = zeros(Float64, length(Temps))
     
     for stepT in eachindex(Temps)
         T = Temps[stepT]
 
-        fnn_dists_store = basepath*"fnn_dists/Size$N/fnn_dists_Temp$(T)_N$(N).txt"
+        fnn_dists_store = joinpath(basepath, "ising", "fnn_dists", "Size$N", "fnn_dists_temp$(T)_size$(N).txt")
         if !isfile(fnn_dists_store)
-            println("| No FNN Distance Data Found (T=$(T)).")
+            println("| No FNN Distance Data Found at $fnn_dists_store (T=$(T)).")
             println("| Process ended on thread #$(Threads.threadid()): T = $(T)")
             continue
         end
-        fnn_dists = readdlm(fnn_dists_store, ',', Float64)
+        fnn_dists = readdlm(fnn_dists_store, ',', Float64)[:, 1]
     
-        struc_facs_store = basepath*"struc_facs/Size$N/struc_facs_Temp$(T)_N$(N).txt"
+        struc_facs_store = joinpath(basepath, "ising", "struc_facs", "Size$N", "struc_facs_temp$(T)_size$(N).txt")
         if !isfile(struc_facs_store)
             println("| No Structure Factor Data Found (T=$(T)).")
             println("| Process ended on thread #$(Threads.threadid()): T = $(T)")
@@ -61,20 +60,15 @@ end
 axislegend(ax, position = :rb)
 axislegend(ax2, position = :rb)
 
-location_plot = "results/ising/r1_R_correlation_plot_v1_metro.pdf"
+location_plot = "results/ising/r1_R_correlation_plot.png"
 
 open(basepath*"r1_R_corr_data.txt", "w") do io
     writedlm(io, corr_data, ',')
 end;
 
-open(basepath*"r1_R_corr_Nvals.txt", "w") do io
-    writedlm(io, Nvals, ',')
-end;
-
-open(basepath*"r1_R_corr_Temps.txt", "w") do io
-    writedlm(io, Temps, ',')
-end;
-
-println("Saving Plots")
+println("| Saving Plots ...")
 save(location_plot, f)
-println("Done.")
+println("| Done.")
+println("*===========================================")
+
+display(f)
