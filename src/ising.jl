@@ -58,7 +58,7 @@ end
 
 Performs one cluster flip of the Ising lattice `spins` with selection probability `P_add`.
 """
-function isingwolff_step!(N, spins, P_add)
+function isingwolff_step!(N, spins, P_add; rng=TaskLocalRNG())
     nbrs = [[1, 0], [N - 1, 0],
             [0, 1], [0, N - 1]]
     seed = rand(1:N, 2)  # seed spin position
