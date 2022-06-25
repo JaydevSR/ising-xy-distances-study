@@ -74,7 +74,7 @@ function isingwolff_step!(N, spins, P_add; rng=TaskLocalRNG())
         for δ ∈ nbrs
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-            if spins[nn...] == sval && !cluster[nn...] && rand() < P_add
+            if spins[nn...] == sval && !cluster[nn...] && rand(rng) < P_add
                 push!(stack, nn)
                 @inbounds cluster[nn...] = true
             end
