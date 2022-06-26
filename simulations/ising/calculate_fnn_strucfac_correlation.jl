@@ -60,9 +60,9 @@ end
 axislegend(ax, position = :rb)
 axislegend(ax2, position = :rb)
 
-location_plot = "results/ising/r1_R_correlation_plot.png"
+location_plot = joinpath(basepath, "ising", "r1_R_correlation_plot.png")
 
-open(basepath*"r1_R_corr_data.txt", "w") do io
+open(joinpath(basepath, "ising", "r1_R_correlation_data.txt"), "w") do io
     writedlm(io, corr_data, ',')
 end;
 

@@ -22,9 +22,9 @@ function ising_getconfigdata_to_txt(
             T = Temps[stepT]
             verbose && println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
             if from_infinity
-                spins = rand([1.0, -1.0], (N, N))
+                spins = rand([1, -1], (N, N))
             else
-                spins = fill(1.0, (N, N))
+                spins = ones(Int64, (N, N))
             end
 
             P_add = isingwolff_Padd(T)

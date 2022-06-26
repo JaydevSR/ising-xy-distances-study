@@ -63,7 +63,7 @@ end
 Calculate the succeptibility from given array of mean magnetization per site (`N²` sites) at temperature `T`.
 """
 function succeptibility(m_vals, T, N)
-    return (T^-2) * N^2 * var(m_vals, corrected = false)
+    return (T^-1) * N^2 * var(m_vals, corrected = false)
 end
 
 """
