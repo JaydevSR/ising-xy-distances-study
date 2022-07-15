@@ -13,7 +13,7 @@ for N in lattice_sizes
     println("| Lattice Size: $(N) x $(N)        ")
     println(".==================================")
     println("|  ")
-    for stepT in eachindex(Temps)
+    Threads.@threads for stepT in eachindex(Temps)
         T = Temps[stepT]
         println("| Process strarted on thread #$(Threads.threadid()) (T = $(T)).")
         datafile = joinpath([basepath, "ising", "uncorr_configs", "Size$N", "ising_uncorr_configs_temp$(T)_size$(N).txt"])
