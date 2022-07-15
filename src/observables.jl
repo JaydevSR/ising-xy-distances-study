@@ -36,7 +36,7 @@ Calculate the total energy of the square spin lattice `spins` of size `(N, N)` w
 """
 function xy_total_energy(spins::Matrix, N::Int64)
     running_sum = 0
-    for idx in CartesianIndices(spins)
+    for idx in CartesianIndices(spins) #! TODO: Parallelize this
         s_k = spins[idx]
         for δ ∈ CartesianIndex.([(1, 0), (N - 1, 0), (0, 1), (0, N - 1)])
             nn = idx + δ

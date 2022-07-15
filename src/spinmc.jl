@@ -4,6 +4,7 @@ using Statistics
 using SpecialFunctions
 using DelimitedFiles
 using Random
+using StaticArrays
 
 include("ising.jl")
 include("xy.jl")

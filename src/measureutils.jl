@@ -17,30 +17,32 @@ function ising_getconfigdata_to_txt(
         verbose && println("|  ")
         szpath = joinpath([store_at, "ising", "uncorr_configs", "Size$N"])
         ispath(szpath) ? 1 : mkpath(szpath)
-        Threads.@threads for stepT in 1:length(Temps)
-            rng = MersenneTwister(10*N+stepT)
-            T = Temps[stepT]
-            verbose && println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
-            if from_infinity
-                spins = rand([1, -1], (N, N))
-            else
-                spins = ones(Int64, (N, N))
+        @sync for stepT in 1:length(Temps)
+            Threads.@spawn begin
+                rng = MersenneTwister(10*N+stepT)
+                T = Temps[stepT]
+                verbose && println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
+                if from_infinity
+                    spins = rand([1, -1], (N, N))
+                else
+                    spins = ones(Int64, (N, N))
+                end
+    
+                P_add = isingwolff_Padd(T)
+                e1 = @elapsed for i in 1:eqsteps
+                    isingwolff_step!(N, spins, P_add; rng=rng)
+                end
+                τ = autocorr_times[stepT]
+                e2 = @elapsed begin
+                    uncorrelated_spins = ising_getuncorrconfigs!(N, spins, T, τ, n_uncorr; ntau=ntau, rng=rng) 
+                end
+    
+                filename="ising_uncorr_configs_temp$(T)_size$(N).txt"
+                open(joinpath([szpath, filename]), mode) do io
+                    writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
+                end;
+                verbose && println("| Process complete on thread #$(Threads.threadid()) (T = $T) in $(round(e1+e2, digits=3)) seconds.") 
             end
-
-            P_add = isingwolff_Padd(T)
-            e1 = @elapsed for i in 1:eqsteps
-                isingwolff_step!(N, spins, P_add; rng=rng)
-            end
-            τ = autocorr_times[stepT]
-            e2 = @elapsed begin
-                uncorrelated_spins = ising_getuncorrconfigs!(N, spins, T, τ, n_uncorr; ntau=ntau, rng=rng) 
-            end
-
-            filename="ising_uncorr_configs_temp$(T)_size$(N).txt"
-            open(joinpath([szpath, filename]), mode) do io
-                writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
-            end;
-            verbose && println("| Process complete on thread #$(Threads.threadid()) (T = $T) in $(round(e1+e2, digits=3)) seconds.")
         end
         verbose && println("| Done")
         verbose && println(".==================================")
@@ -80,25 +82,28 @@ function xy_getconfigdata_to_txt(
 
         szpath = joinpath([store_at, "xy", "uncorr_configs", "Size$N"])
         ispath(szpath) ? 1 : mkpath(szpath)
-        for stepT in 1:length(Temps)
-            T = Temps[stepT]
-            verbose && println("| Process strarted on thread #$(Threads.threadid()) (T = $(T)).")
-    
-            spins = zeros(Float64, (N, N))
-            e1 = @elapsed for i in 1:eqsteps
-                xywolff_step!(N, spins, T)
-            end
+        @sync for stepT in 1:length(Temps)
+            Threads.@spawn begin
+                rng = MersenneTwister(10*N+stepT)
+                T = Temps[stepT]
+                verbose && println("| Process strarted on thread #$(Threads.threadid()) (T = $(T)).")
+        
+                spins = zeros(Float64, (N, N))
+                e1 = @elapsed for i in 1:eqsteps
+                    xywolff_step!(N, spins, T; rng=rng)
+                end
 
-            τ = autocorr_times[stepT]
-            e2 = @elapsed begin
-                uncorrelated_spins = xy_getuncorrconfigs!(N, spins, T, τ, n_uncorr; ntau=ntau)
+                τ = autocorr_times[stepT]
+                e2 = @elapsed begin
+                    uncorrelated_spins = xy_getuncorrconfigs!(N, spins, T, τ, n_uncorr; ntau=ntau, rng=rng)
+                end
+                
+                filename="xy_uncorr_configs_temp$(T)_size$(N).txt"
+                open(joinpath([szpath, filename]), mode) do io
+                    writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
+                end;
+                verbose && println("| Process complete on thread #$(Threads.threadid()) (T = $T) in $(round(e1+e2, digits=3)) seconds.")
             end
-            
-            filename="xy_uncorr_configs_temp$(T)_size$(N).txt"
-            open(joinpath([szpath, filename]), mode) do io
-                writedlm(io, reshape(uncorrelated_spins, (N*N, n_uncorr)), ',')
-            end;
-            verbose && println("| Process complete on thread #$(Threads.threadid()) (T = $T) in $(round(e1+e2, digits=3)) seconds.")
         end
         verbose && println("| Done.")
         verbose && println(".==================================")
@@ -106,12 +111,12 @@ function xy_getconfigdata_to_txt(
     nothing
 end
 
-function xy_getuncorrconfigs!(N, spins::Matrix, T, τ, n_uncorr; ntau=5)
+function xy_getuncorrconfigs!(N, spins::Matrix, T, τ, n_uncorr; ntau=5, rng=TaskLocalRNG())
     ntau_τ = ntau*τ
     nsteps = ntau_τ*n_uncorr
     uncorrelated_spins = zeros(Float64, (N, N, n_uncorr))
     for j=1:nsteps
-        xywolff_step!(N, spins, T)
+        xywolff_step!(N, spins, T; rng=rng)
         if j%ntau_τ == 0
             uncorrelated_spins[:, :, j÷ntau_τ] = spins
         end
@@ -163,11 +168,13 @@ function ising_getcorrtime(
     wolff=false, from_infinity::Bool=false, verbose::Bool=false, eqsteps=1000
     )
     corr_times = zeros(Int64, length(Temps))
-    Threads.@threads for i=eachindex(Temps)
-        T = Temps[i]
-        verbose && println("> Process strarted on thread #$(Threads.threadid()): T = $(T)")
-        corr_times[i] = ising_getcorrtime(N, T, msteps, wsteps; wolff=wolff, from_infinity=from_infinity, eqsteps=eqsteps)
-        verbose && println("> Process complete on thread #$(Threads.threadid()): T = $T, τ=$(corr_times[i])")
+    @sync for i=eachindex(Temps)
+        Threads.@spawn begin
+            T = Temps[i]
+            verbose && println("> Process strarted on thread #$(Threads.threadid()): T = $(T)")
+            corr_times[i] = ising_getcorrtime(N, T, msteps, wsteps; wolff=wolff, from_infinity=from_infinity, eqsteps=eqsteps)
+            verbose && println("> Process complete on thread #$(Threads.threadid()): T = $T, τ=$(corr_times[i])")
+        end
     end
     verbose && println("Results: $corr_times")
     return corr_times
