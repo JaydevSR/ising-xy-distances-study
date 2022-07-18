@@ -1,15 +1,10 @@
-using CairoMakie
-using JLD2
 using Statistics
-using SpecialFunctions
 using DelimitedFiles
 using Random
 using StaticArrays
 
+include("lazystack.jl")
 include("ising.jl")
-include("xy.jl")
-include("observables.jl")
-include("statutils.jl")
-include("visualutils.jl")
-include("isingexact.jl")
-include("measureutils.jl")
+inclure("statutils.jl")
+
+const ising_Tc = 2 / log1p(sqrt(2))
