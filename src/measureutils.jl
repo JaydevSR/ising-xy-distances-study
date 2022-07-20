@@ -19,8 +19,7 @@ function ising_getconfigdata_to_txt(
         ispath(szpath) ? 1 : mkpath(szpath)
         @sync for stepT in 1:length(Temps)
             Threads.@spawn begin
-                rng = MersenneTwister(10*N+stepT)
-                T = Temps[stepT]
+                T = $Temps[stepT]
                 verbose && println("| Process strarted on thread #$(Threads.threadid()): T = $(T)")
                 if from_infinity
                     spins = rand([1, -1], (N, N))
@@ -30,11 +29,11 @@ function ising_getconfigdata_to_txt(
     
                 P_add = isingwolff_Padd(T)
                 e1 = @elapsed for i in 1:eqsteps
-                    isingwolff_step!(N, spins, P_add; rng=rng)
+                    isingwolff_step!(N, spins, P_add)
                 end
-                τ = autocorr_times[stepT]
+                τ = $autocorr_times[stepT]
                 e2 = @elapsed begin
-                    uncorrelated_spins = ising_getuncorrconfigs!(N, spins, T, τ, n_uncorr; ntau=ntau, rng=rng) 
+                    uncorrelated_spins = ising_getuncorrconfigs!(N, spins, T, τ, n_uncorr; ntau=ntau) 
                 end
     
                 filename="ising_uncorr_configs_temp$(T)_size$(N).txt"
@@ -49,10 +48,10 @@ function ising_getconfigdata_to_txt(
     end
 end
 
-function ising_getuncorrconfigs!(N, spins::Matrix, T, τ, n_uncorr; ntau=5, rng=TaskLocalRNG())
+function ising_getuncorrconfigs!(N::Int, spins::Matrix, T::Float64, τ::Int, n_uncorr::Int; ntau::Int=5, rng=TaskLocalRNG())
     ntau_τ = ntau*τ
     nsteps = ntau_τ*n_uncorr
-    uncorrelated_spins = zeros(Float64, (N, N, n_uncorr))
+    uncorrelated_spins = zeros(Int, (N, N, n_uncorr))
     P_add = isingwolff_Padd(T)
     for j=1:nsteps
         isingwolff_step!(N, spins, P_add; rng=rng)
@@ -85,7 +84,7 @@ function xy_getconfigdata_to_txt(
         @sync for stepT in 1:length(Temps)
             Threads.@spawn begin
                 rng = MersenneTwister(10*N+stepT)
-                T = Temps[stepT]
+                T = $Temps[stepT]
                 verbose && println("| Process strarted on thread #$(Threads.threadid()) (T = $(T)).")
         
                 spins = zeros(Float64, (N, N))
@@ -93,7 +92,7 @@ function xy_getconfigdata_to_txt(
                     xywolff_step!(N, spins, T; rng=rng)
                 end
 
-                τ = autocorr_times[stepT]
+                τ = $autocorr_times[stepT]
                 e2 = @elapsed begin
                     uncorrelated_spins = xy_getuncorrconfigs!(N, spins, T, τ, n_uncorr; ntau=ntau, rng=rng)
                 end
