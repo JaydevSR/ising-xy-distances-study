@@ -42,6 +42,7 @@ function wolff_update!(
     cluster = falses(model.L, model.L)
     seed = CartesianIndex(Tuple(rand(1:model.L, 2)))  # seed spin position
     u_flip = rand(rng)  # Random unit vector in xy plane
+    empty!(stack)
     push!(stack, seed)
     @inbounds cluster[seed] = true
     while !isempty(stack)
@@ -56,6 +57,7 @@ function wolff_update!(
             end
         end
     end
+    return model
 end
 
 @inline @inbounds function xywolff_flip_spin!(model, pos::CartesianIndex, u_flip::Float64)

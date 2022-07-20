@@ -92,7 +92,7 @@ function wolff_update!(
     else
         model.counts = @SVector [model.counts[1] + n_flips, model.counts[2] - n_flips]
     end
-    nothing
+    return model
 end
 
 isingwolff_Padd(T::Float64) = 1 - exp(-2 / T)
