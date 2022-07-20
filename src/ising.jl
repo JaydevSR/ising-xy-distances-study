@@ -2,16 +2,16 @@
 mutable struct ClassicalIsingModel2D{T, LL} <: SpinModel2D{T}
     L::Int
     lattice::Matrix{T}
-    counts::SVector{Int, 2}
+    counts::SVector{2, Int}
     shifts::SVector
 end
 
 const ising_Tc = 2 / log1p(sqrt(2))
 
-function ClassicalIsing2D(L::Int, start::Symbol=:cold)
+function ClassicalIsingModel2D(L::Int, start::Symbol=:cold)
     if start == :cold
         lattice = ones(Int, L, L)
-        counts=(1, 0)
+        counts=(L*L, 0)
     elseif start == :hot
         lattice = rand([-1, 1], (L, L))
         count_1 = 0
@@ -33,7 +33,10 @@ function ClassicalIsing2D(L::Int, start::Symbol=:cold)
     return ClassicalIsingModel2D{Int, L}(L, lattice, counts, shifts)
 end
 
-magnetization(model::ClassicalIsingModel2D) = (model.counts[1] - model.counts[2])
+@inbounds function magnetization(model::ClassicalIsingModel2D)
+    m = (model.counts[1] - model.counts[2])
+    return abs(m)
+end
 
 function hamiltonian(model::ClassicalIsingModel2D)
     running_sum = 0
@@ -65,23 +68,26 @@ end
 
 function wolff_update!(
                     model::ClassicalIsingModel2D,
-                    T::Float64;
+                    T::Float64,
+                    cluster::BitMatrix=falses(model.L, model.L),
+                    stack::LazyStack=LazyStack(CartesianIndex{2});
                     P_add::Float64=isingwolff_Padd(T),
-                    rng=TaskLocalRNG(),
-                    stack::LazyStack=LazyStack(CartesianIndex{2}))
-    cluster = falses(model.L, model.L)
-    seed = CartesianIndex(Tuple(rand(1:model.L, 2)))
+                    )
     empty!(stack)
+    cluster .= false
+    seed = CartesianIndex(Tuple(rand(1:model.L, 2)))
     push!(stack, seed)
     @inbounds sval = model.lattice[seed]
     @inbounds cluster[seed] = true
     n_flips = 0
+    nn = CartesianIndex(0, 0)
     while !isempty(stack)
         k = pop!(stack)
         @inbounds model.lattice[k] *= -1
         n_flips += 1
-        for nn in get_neighbors(model, k)
-            if model.lattice[nn] == sval && !cluster[nn] && rand(rng) < P_add
+        for δ in model.shifts
+            @inbounds nn = CartesianIndex(mod1(k[1] + δ[1], model.L), mod1(k[2] + δ[2], model.L))
+            if model.lattice[nn] == sval && !cluster[nn] && rand() < P_add
                 push!(stack, nn)
                 @inbounds cluster[nn] = true
             end
