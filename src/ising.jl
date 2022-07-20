@@ -1,13 +1,12 @@
 # Model
-mutable struct ClassicalIsing2D{T, LL}
+mutable struct ClassicalIsingModel2D{T, LL} <: SpinModel2D{T}
     L::Int
     lattice::Matrix{T}
     counts::SVector{Int, 2}
     shifts::SVector
-    # TODO
-    # H::Float64
-    # M::Float64
 end
+
+const ising_Tc = 2 / log1p(sqrt(2))
 
 function ClassicalIsing2D(L::Int, start::Symbol=:cold)
     if start == :cold
@@ -31,16 +30,12 @@ function ClassicalIsing2D(L::Int, start::Symbol=:cold)
         CartesianIndex(1, 0), CartesianIndex(L - 1, 0), 
         CartesianIndex(0, 1), CartesianIndex(0, L - 1)
         ]
-    return ClassicalIsing2D{Int, L}(L, lattice, counts, shifts)
+    return ClassicalIsingModel2D{Int, L}(L, lattice, counts, shifts)
 end
 
-function get_neighbors(model::ClassicalIsing2D, k::CartesianIndex)
-    return SA[[CartesianIndex(mod1.((k+δ).I, model.L)) for δ in model.shifts]...]
-end
+magnetization(model::ClassicalIsingModel2D) = (model.counts[1] - model.counts[2])
 
-magnetization(model::ClassicalIsing2D) = (model.counts[1] - model.counts[2])
-
-function hamiltonian(model::ClassicalIsing2D)
+function hamiltonian(model::ClassicalIsingModel2D)
     running_sum = 0
     for site in eachindex(model.lattice)
         for nn in get_neighbors(model, site)
@@ -50,67 +45,28 @@ function hamiltonian(model::ClassicalIsing2D)
     return - running_sum / 2  # divide by 2 because each bond counted twice
 end
 
-"""
-    isingmetro_step!(model, T, E, M)
-
-Perform one sweep of the lattice using single-spin-flip dynamics (1 sweep == N*N flip attempts).
-Here arguments E and M are the total energy and total magnetization before the sweep.
-Returns total energy and magnetization after sweep.
-"""
-function metropolis_update!(model, T, E, M)
-    # TODO: change counts
-    for i = 1:model.L^2
-        k = rand(1:model.L, 2)
-        ΔE = ising_delE_flip(model, k)
-        if isingmetro_accept(ΔE, T)
-            model.lattice[k] *= -1
-            E = E + ΔE
-            M = M + 2model.lattice[k]
+# TODO: simplify this using counts
+function structure_factor(model::ClassicalIsingModel2D; scaled::Bool=false)
+    R_spins = 0
+    for i in CartesianIndices(model.lattice)
+        for j in CartesianIndices(model.lattice)
+            R_spins += xy_spindot(model.lattice[i], model.lattice[j])
         end
     end
-    return E, M
-end
-
-
-"""
-    isingmetro_accept(spins, N, k_i, k_j, T)
-
-Determine whether to accept the next state or not according to Metropolis acceptance rates.
-Returns `true` or `false`.
-"""
-@inline function isingmetro_accept(ΔE, T)
-    # Metropolis Acceptance Rates
-    if ΔE <= 0
-        return true
-    elseif rand() < exp(-ΔE / T)
-        return true
+    if scaled
+        R_spins /= N^2
     else
-        return false
+        R_spins /= N^4
     end
+    return R_spins
 end
 
+# Algorithms
 
-"""
-    ising_delE_flip(model, k)
-
-Calculate the energy difference between two states for one spin flip at site `k`.
-"""
-@inline function ising_delE_flip(model, k)
-    ΔE = 0
-    for nn in get_neighbors(model, k)
-        ΔE += model.lattice[nn]
-    end
-    ΔE *= 2model.lattice[k]
-end
-
-"""
-    wolff_cluster_update(model, P_add; [rng=TaskLocalRNG(), stack=LazyStack()])
-
-Performs one cluster flip of the Ising lattice `spins` at temperature `T`.
-"""
 function wolff_update!(
-                    model::ClassicalIsing2D,
-                    P_add::Float64;
+                    model::ClassicalIsingModel2D,
+                    T::Float64;
+                    P_add::Float64=isingwolff_Padd(T),
                     rng=TaskLocalRNG(),
                     stack::LazyStack=LazyStack(CartesianIndex{2}))
     cluster = falses(model.L, model.L)
@@ -139,7 +95,4 @@ function wolff_update!(
     nothing
 end
 
-"""
-Probability of adding a site to cluster
-"""
 isingwolff_Padd(T::Float64) = 1 - exp(-2 / T)
