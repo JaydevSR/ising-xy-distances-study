@@ -1,119 +1,96 @@
-"""
-    isingmetro_step!(spins, T, E, M)
-
-Perform one sweep of the lattice using single-spin-flip dynamics (1 sweep == N*N flip attempts).
-Here arguments E and M are the total energy and total magnetization before the sweep.
-Returns total energy and magnetization after sweep.
-"""
-function isingmetro_step!(spins, T, E, M)
-    N = size(spins)[1]
-    for i = 1:N^2
-        k = rand(1:N, 2)
-        ΔE = ising_delE_flip(spins, k, N)
-        if isingmetro_accept(ΔE, T)
-            spins[k[1], k[2]] *= -1
-            E = E + ΔE
-            M = M + 2spins[k[1], k[2]]
-        end
-    end
-    return E, M
+# Model
+mutable struct ClassicalIsingModel2D{T, LL} <: SpinModel2D{T}
+    L::Int
+    lattice::Matrix{T}
+    counts::SVector{2, Int}
+    shifts::SVector
 end
 
+const ising_Tc = 2 / log1p(sqrt(2))
 
-"""
-    isingmetro_accept(spins, N, k_i, k_j, T)
-
-Determine whether to accept the next state or not according to Metropolis acceptance rates.
-Returns `true` or `false`.
-"""
-function isingmetro_accept(ΔE, T)
-    # Metropolis Acceptance Rates
-    if ΔE <= 0
-        return true
-    elseif rand() < exp(-ΔE / T)
-        return true
+function ClassicalIsingModel2D(L::Int, start::Symbol=:cold)
+    if start == :cold
+        lattice = ones(Int, L, L)
+        counts=(L*L, 0)
+    elseif start == :hot
+        lattice = rand([-1, 1], (L, L))
+        count_1 = 0
+        for i in eachindex(lattice)
+            if lattice[i] == 1
+                count_1 += 1
+            end
+        end
+        counts = @SVector [count_1, L*L-count_1]
     else
-        return false
+        error("Start state can be one of symbols :$(:cold) or :$(:hot)")
     end
+
+    # Square lattice with 4 nearest neighbors
+    shifts = SA[
+        CartesianIndex(1, 0), CartesianIndex(L - 1, 0), 
+        CartesianIndex(0, 1), CartesianIndex(0, L - 1)
+        ]
+    return ClassicalIsingModel2D{Int, L}(L, lattice, counts, shifts)
 end
 
-
-"""
-    ising_delE_flip(spins, k)
-
-Calculate the energy difference between two states for one spin flip at site k.
-"""
-function ising_delE_flip(spins, k, N)
-    ΔE = 0
-    for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
-        nn = k + δ
-        @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-        ΔE += spins[nn[1], nn[2]]
-    end
-    ΔE *= 2spins[k[1], k[2]]
+@inbounds function magnetization(model::ClassicalIsingModel2D)
+    m = (model.counts[1] - model.counts[2])
+    return abs(m)
 end
 
-"""
-    isingwolff_step!(spins, P_add)
+function hamiltonian(model::ClassicalIsingModel2D)
+    running_sum = 0
+    for site in eachindex(model.lattice)
+        for nn in get_neighbors(model, site)
+            @inbounds running_sum += model.lattice[site] * model.lattice[nn]
+        end
+    end
+    return - running_sum / 2  # divide by 2 because each bond counted twice
+end
 
-Performs one cluster flip of the Ising lattice `spins` with selection probability `P_add`.
-"""
-function isingwolff_step!(N, spins, P_add; rng=TaskLocalRNG())
-    nbrs = [[1, 0], [N - 1, 0],
-            [0, 1], [0, N - 1]]
-    seed = rand(1:N, 2)  # seed spin position
-    stack = []
-    sizehint!(stack, N*N)
+# TODO: simplify this using counts
+function structure_factor(model::ClassicalIsingModel2D; scaled::Bool=false)
+    R_spins = model.counts[1]*(model.counts[1] - model.counts[2])
+    R_spins += model.counts[2]*(model.counts[2] - model.counts[1])
+    scaled ? (R_spins /= model.L^2) : (R_spins /= model.L^4)
+    return R_spins
+end
+
+# Algorithms
+
+function wolff_update!(
+                    model::ClassicalIsingModel2D,
+                    T::Float64;
+                    cluster::BitMatrix=falses(model.L, model.L),
+                    stack::LazyStack=LazyStack(CartesianIndex{2}),
+                    P_add::Float64=isingwolff_Padd(T),
+                    )
+    empty!(stack)
+    cluster .= false
+    seed = CartesianIndex(Tuple(rand(1:model.L, 2)))
     push!(stack, seed)
-    cluster = falses(size(spins))
-    @inbounds sval = spins[seed...]
-    @inbounds cluster[seed...] = true
+    @inbounds sval = model.lattice[seed]
+    @inbounds cluster[seed] = true
+    n_flips = 0
+    nn = CartesianIndex(0, 0)
     while !isempty(stack)
         k = pop!(stack)
-        @inbounds spins[k...] = -spins[k...]
-        for δ ∈ nbrs
-            nn = k + δ
-            @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-            if spins[nn...] == sval && !cluster[nn...] && rand(rng) < P_add
+        @inbounds model.lattice[k] *= -1
+        n_flips += 1
+        for δ in model.shifts
+            @inbounds nn = CartesianIndex(mod1(k[1] + δ[1], model.L), mod1(k[2] + δ[2], model.L))
+            if model.lattice[nn] == sval && !cluster[nn] && rand() < P_add
                 push!(stack, nn)
-                @inbounds cluster[nn...] = true
+                @inbounds cluster[nn] = true
             end
         end
     end
-    # ΔM = 2 * spins[seed...] * sum(cluster)
-    # return ΔM
-    nothing
-end
-
-"""
-    isingwolff_get_cluster!(N, spins, seed, P_add)
-
-Generates a cluster in the Ising lattice `spins` at site `seed` with neighbour selection probability `P_add`.
-"""
-function isingwolff_get_cluster!(N, spins, seed, P_add, nbrs)
-    cluster = falses(size(spins))
-    @inbounds sval = spins[seed...]
-    stack = [seed]
-    @inbounds cluster[seed...] = true
-    while !isempty(stack)
-        k = pop!(stack)
-        for δ ∈ nbrs
-            nn = k + δ
-            @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-            if spins[nn...] == sval && !cluster[nn...] && rand() < P_add
-                push!(stack, nn)
-                @inbounds cluster[nn...] = true
-            end
-        end
+    if sval == 1
+        model.counts = @SVector [model.counts[1] - n_flips, model.counts[2] + n_flips]
+    else
+        model.counts = @SVector [model.counts[1] + n_flips, model.counts[2] - n_flips]
     end
-    return cluster
+    return model
 end
 
-"""
-    isingwolff_Padd(T; J=1)
-
-Calculate the probability of adding a neighbour to a cluster at temperature `T` and interaction energy `J`.
-"""
-function isingwolff_Padd(T; J=1)
-    return 1 - exp(-2 * J / T)
-end
+isingwolff_Padd(T::Float64) = 1 - exp(-2 / T)

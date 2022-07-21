@@ -1,7 +1,3 @@
 # data
-
-*.jld2
-
-uncorr_configs*.txt
-
-corr_*.txt
+/data
+/Manifest.toml

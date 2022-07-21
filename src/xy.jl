@@ -1,106 +1,74 @@
-"""
-    xywolff_step!(N::Int64, spins::Matrix, T::Float64)
-
-Perform one step of Wolff algorithm for XY model (lattice `spins` of size `(N, N)` at temperature `T`).
-"""
-function xywolff_step!(N::Int, spins::Matrix, T::Float64; rng=TaskLocalRNG())
-    seed = rand(1:N, 2)  # seed spin position
-    u_flip = rand(rng)  # Random unit vector in xy plane
-    nbrs = [[1, 0], [N - 1, 0], [0, 1], [0, N - 1]]
-    xywolff_cluster_update!(N, spins, seed, u_flip, T, nbrs; rng=rng)
+# Model
+mutable struct ClassicalXYModel2D{T, LL} <: SpinModel2D{T}
+    L::Int
+    lattice::Matrix{T}
+    proj_X::Float64
+    proj_Y::Float64
+    shifts::SVector
 end
 
-"""
-    xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T::Float64)
+function hamiltonian(model::ClassicalXYModel2D)
+    running_sum = 0
+    for idx in CartesianIndices(model.lattice)
+        s_k = model.lattice[idx]
+        for nn in get_neighbors(model, idx)
+            running_sum += cos2pi(s_k - model.lattice[nn])
+        end
+    end
+    return -running_sum / 2  # divide by 2 because each bond counted twice
+end
 
-Build a cluster among `spins` starting at `seed` at temperature `T`. Flip the cluster w.r.t angle `u_flip`.
-"""
-function xywolff_cluster_update!(N, spins::Matrix, seed::AbstractArray, u_flip::Float64, T::Float64, nbrs; rng=TaskLocalRNG())
-    stack = []
-    sizehint!(stack, N*N)
+function structure_factor(model::ClassicalXYModel2D; scaled::Bool=false)
+    R_spins = 0
+    for i in CartesianIndices(model.lattice)
+        for j in CartesianIndices(model.lattice)
+            R_spins += cos2pi(model.lattice[i] - model.lattice[j])
+        end
+    end
+    if scaled
+        R_spins /= N^2
+    else
+        R_spins /= N^4
+    end
+    return R_spins
+end
+
+# TODO: Update projections in the model
+function wolff_update!(
+                    model::ClassicalXYModel2D,
+                    T::Float64;
+                    rng=TaskLocalRNG(),
+                    stack::LazyStack=LazyStack(CartesianIndex{2}))
+    cluster = falses(model.L, model.L)
+    seed = CartesianIndex(Tuple(rand(1:model.L, 2)))  # seed spin position
+    u_flip = rand(rng)  # Random unit vector in xy plane
+    empty!(stack)
     push!(stack, seed)
-    cluster = falses(size(spins))
-    @inbounds sval = spins[seed...]
-    @inbounds cluster[seed...] = true
+    @inbounds cluster[seed] = true
     while !isempty(stack)
         k = pop!(stack)
-        @inbounds kval = spins[k...]
-        xywolff_flip_spin!(spins, k, u_flip)
-        for δ ∈ nbrs
-            nn = k + δ
-            @. nn = mod1(nn, N)  # Apply periodic boundary conditions
-            @inbounds nnval = spins[nn...]
-            if !cluster[nn...] && rand(rng) < xywolff_Padd(u_flip, nnval, kval, T)
+        @inbounds kval = model.lattice[k]
+        xywolff_flip_spin!(model, k, u_flip)
+        for nn in get_neighbors(model, k)
+            nnval = spins[nn]
+            if !cluster[nn] && rand(rng) < xywolff_Padd(u_flip, nnval, kval, T)
                 push!(stack, nn)
-                @inbounds cluster[nn...] = true
+                @inbounds cluster[nn] = true
             end
         end
     end
+    return model
 end
 
-"""
-    xywolff_flip_spin!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
-
-Flip the spin at position `pos` inside lattice `spins` w.r.t. angle `u_flip`.
-"""
-function xywolff_flip_spin!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
-    old = spins[pos...]
+@inline @inbounds function xywolff_flip_spin!(model, pos::CartesianIndex, u_flip::Float64)
+    old = model.lattice[pos]
     new = 0.5 + 2 * u_flip - old  # flipping w.r.t vector with angle ϕ: θ --> π + 2ϕ - θ
     new = mod(new + 1, 1)
-    spins[pos...] = new
-    return old, spins[pos...]
+    model.lattice[pos] = new
+    return model
 end
 
-function decompose_XY_to_ising(XYlattice, u_flip)
-    along_u = cos2pi.(XYlattice .- u_flip)
-    normal_u = sin2pi.(XYlattice .- u_flip)
-    Ising_pll = sign.(along_u)
-    Ising_prp = sign.(normal_u)
-    len_pll = abs.(along_u)
-    len_prp = abs.(normal_u)
-    return Ising_pll, Ising_prp, len_pll, len_prp
-end
-
-function compose_ising_to_XY(ising_pll, ising_prp, len_pll, len_prp, u_flip)
-    along_u = ising_pll .* len_pll
-    normal_u = ising_prp .* len_prp
-    x = along_u .* cos2pi(u_flip) .- normal_u .* sin2pi(u_flip)
-    y = along_u .* sin2pi(u_flip) .+ normal_u .* cos2pi(u_flip)
-    XYlattice = mod1.(atan.(y, x) ./ (2pi), 1)
-    return XYlattice
-end
-
-"""
-    xywolff_Padd(u_flip::Float64, s1::Float64, s2::Float64, T::Float64; J=1)
-
-Calculate the probability of adding spin `s2` to cluster of as a neighbour of `s1` at temperature `T` w.r.t angle `u_flip`. The interaction energy defaults to `1`.
-"""
-function xywolff_Padd(u_flip::Float64, s1::Float64, s2::Float64, T::Float64; J=1)
-    arg = -2 * J * cos2pi(u_flip - s1) * cos2pi(u_flip - s2) / T
+function xywolff_Padd(u_flip::Float64, s1::Float64, s2::Float64, T::Float64)
+    arg = -2*cos2pi(u_flip - s1)*cos2pi(u_flip - s2) / T
     return 1 - exp(arg)
-end
-
-"""
-    xywolff_isparallel(s1, s2)
-
-Determine whether `s1` and `s2` have a component along the same direction or not. Returns `true` or `false`.
-"""
-function xywolff_isparallel(s1::Float64, s2::Float64)
-    tht1, tht2 = 2pi*s1, 2pi*s2
-    if 0 <= mod1(tht1 - tht2, 2pi) < pi
-        return true
-    end
-    return false
-end
-
-function cos2pi(x::Float64)
-    return cos(2 * pi * x)
-end
-
-function sin2pi(x::Float64)
-    return sin(2 * pi * x)
-end
-
-function xy_spindot(s1, s2)
-    return cos2pi(s1-s2)
 end
