@@ -11,7 +11,7 @@ function ising_get_measurements_to_txt(
     mode="w",
     get_mags::Bool=true,
     get_structure_factors::Bool=true
-)
+    )
     for L in lattice_sizes
         verbose && println(".==================================")
         verbose && println("| Lattice Size: $(L) x $(L)        ")
@@ -45,7 +45,6 @@ function ising_get_measurements_to_txt(
     get_mags::Bool=true,
     get_structure_factors::Bool=true
     )
-
     verbose && println("| Process strarted for T = $(T).")
     el = @elapsed begin
         model = ClassicalIsingModel2D(L, start)
