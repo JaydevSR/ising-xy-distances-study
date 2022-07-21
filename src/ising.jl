@@ -50,17 +50,9 @@ end
 
 # TODO: simplify this using counts
 function structure_factor(model::ClassicalIsingModel2D; scaled::Bool=false)
-    R_spins = 0
-    for i in CartesianIndices(model.lattice)
-        for j in CartesianIndices(model.lattice)
-            R_spins += xy_spindot(model.lattice[i], model.lattice[j])
-        end
-    end
-    if scaled
-        R_spins /= N^2
-    else
-        R_spins /= N^4
-    end
+    R_spins = model.counts[1]*(model.counts[1] - model.counts[2])
+    R_spins += model.counts[2]*(model.counts[2] - model.counts[1])
+    scaled ? (R_spins /= model.L^2) : (R_spins /= model.L^4)
     return R_spins
 end
 
@@ -68,9 +60,9 @@ end
 
 function wolff_update!(
                     model::ClassicalIsingModel2D,
-                    T::Float64,
+                    T::Float64;
                     cluster::BitMatrix=falses(model.L, model.L),
-                    stack::LazyStack=LazyStack(CartesianIndex{2});
+                    stack::LazyStack=LazyStack(CartesianIndex{2}),
                     P_add::Float64=isingwolff_Padd(T),
                     )
     empty!(stack)
