@@ -4,7 +4,7 @@ mutable struct ClassicalXYModel2D{T, LL} <: SpinModel2D{T}
     lattice::Matrix{T}
     proj_X::Float64
     proj_Y::Float64
-    shifts::SVector
+    shifts::NTuple{4, CartesianIndex{2}}
 end
 
 function hamiltonian(model::ClassicalXYModel2D)

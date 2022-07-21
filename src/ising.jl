@@ -2,8 +2,8 @@
 mutable struct ClassicalIsingModel2D{T, LL} <: SpinModel2D{T}
     L::Int
     lattice::Matrix{T}
-    counts::SVector{2, Int}
-    shifts::SVector
+    counts::NTuple{2, Int}
+    shifts::NTuple{4, CartesianIndex{2}}
 end
 
 const ising_Tc = 2 / log1p(sqrt(2))
@@ -20,16 +20,16 @@ function ClassicalIsingModel2D(L::Int, start::Symbol=:cold)
                 count_1 += 1
             end
         end
-        counts = @SVector [count_1, L*L-count_1]
+        counts = (count_1, L*L-count_1)
     else
         error("Start state can be one of symbols :$(:cold) or :$(:hot)")
     end
 
     # Square lattice with 4 nearest neighbors
-    shifts = SA[
+    shifts = (
         CartesianIndex(1, 0), CartesianIndex(L - 1, 0), 
         CartesianIndex(0, 1), CartesianIndex(0, L - 1)
-        ]
+    )
     return ClassicalIsingModel2D{Int, L}(L, lattice, counts, shifts)
 end
 
@@ -86,9 +86,9 @@ function wolff_update!(
         end
     end
     if sval == 1
-        model.counts = @SVector [model.counts[1] - n_flips, model.counts[2] + n_flips]
+        model.counts = (model.counts[1] - n_flips, model.counts[2] + n_flips)
     else
-        model.counts = @SVector [model.counts[1] + n_flips, model.counts[2] - n_flips]
+        model.counts = (model.counts[1] + n_flips, model.counts[2] - n_flips)
     end
     return model
 end

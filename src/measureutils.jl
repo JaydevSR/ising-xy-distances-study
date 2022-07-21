@@ -53,7 +53,7 @@ function ising_get_measurements_to_txt(
         P_add = isingwolff_Padd(T)
         stack = LazyStack(CartesianIndex{2})
         cluster = falses(L, L)
-        for i=1:eqsteps  # equilibration
+        el_eq = @elapsed for i=1:eqsteps  # equilibration
             wolff_update!(model, T; P_add=P_add, stack=stack, cluster=cluster)
         end
     
@@ -92,6 +92,36 @@ function ising_get_measurements_to_txt(
             end;
         end
     end
-    verbose && println("| Process complete for T = $T in $(round(el, digits=0)) seconds.")
+    verbose && println("| Process complete for T = $T in $(round(el+el_eq, digits=0)) seconds.")
     nothing
+end
+
+function ising_getcorrtime(
+    L::Int64, T::Float64, msteps=20000, wsteps=1000, eqsteps=1000; verbose=true)
+    verbose && (@info "Calculating autocorrelation time for system size $(L)x$(L) and temperature $(T).")
+    model = ClassicalIsingModel2D(L, :cold)
+    mags = zeros(Float64, msteps)
+    P_add = isingwolff_Padd(T)
+    stack = LazyStack(CartesianIndex{2})
+    cluster = falses(L, L)
+    verbose && (@info "Equilibrating the system over $(eqsteps) steps.")
+    for i=1:eqsteps  # equilibration
+        wolff_update!(model, T; P_add=P_add, stack=stack, cluster=cluster)
+    end
+
+    verbose && (@info "Calculating magnetizations over $(msteps) steps.")
+    for i=1:msteps
+        wolff_update!(model, T; P_add=P_add, stack=stack, cluster=cluster)
+        @inbounds mags[i] = magnetization(model)
+    end
+    
+    verbose && (@info "Calculating autocorrelation function.")
+    @. mags /= L^2
+    corrfn = autocorrelation_fn(mags)
+
+    # Measure the integrated correlation time in a small window
+    @views τ = corrfn[1:wsteps] |> sum |> ceil
+    τ = convert(Int64, τ)
+    verbose && (@info "Autocorrelation time: $(τ)")
+    return τ
 end

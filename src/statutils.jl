@@ -1,5 +1,5 @@
 """
-    autocorrelation_fn(mags, N)
+    autocorrelation_fn(series)
 
 Calculate the autocorrelation function (normalized) of the given time series array.
 """

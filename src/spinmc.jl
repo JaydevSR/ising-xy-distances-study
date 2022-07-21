@@ -1,7 +1,7 @@
 using Statistics
 using DelimitedFiles
 using Random
-using StaticArrays
+# using StaticArrays
 
 include("lazystack.jl")
 
