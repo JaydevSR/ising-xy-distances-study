@@ -51,7 +51,7 @@ function ising_get_measurements_to_txt(
         szpath = joinpath([store_at, "Ising", "Size$L"])
         mkpath(szpath)
         P_add = isingwolff_Padd(T)
-        stack = LazyStack(CartesianIndex{2})
+        stack = LazyStack(Int)
         cluster = falses(L, L)
         el_eq = @elapsed for i=1:eqsteps  # equilibration
             wolff_update!(model, T; P_add=P_add, stack=stack, cluster=cluster)

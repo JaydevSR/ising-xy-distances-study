@@ -8,13 +8,13 @@ append!(temperatures, [2.30, 2.31, 2.32, 2.33, 2.34, 2.35, 2.36, 2.37, 2.38, 2.3
 append!(temperatures, [2.40, 2.50, 2.60, 2.70])
 
 autocorr_times = [1, 2, 2, 2]
-append!(autocorr_times, [3, 4, 6, 8, 9, 11, 14, 12, 11, 10])
-append!(autocorr_times, [9, 8, 8, 7, 7, 6, 6, 5, 5, 5])
-append!(autocorr_times, [5, 12, 15, 24])
+append!(autocorr_times, [5, 5, 6, 8, 9, 11, 14, 12, 11, 10])
+append!(autocorr_times, [9, 8, 8, 8, 8, 8, 8, 8, 8, 8])
+append!(autocorr_times, [8, 12, 15, 24])
 
 nconfigs = 10000
 eqsteps = 5000
-ntau = 3
+ntau = 10
 store_at = "data/"
 start=:cold
 verbose=true
