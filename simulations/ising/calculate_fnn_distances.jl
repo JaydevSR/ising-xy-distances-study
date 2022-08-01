@@ -3,7 +3,7 @@ include("../../src/spinmc.jl")
 datapath = joinpath("d:\\", "Projects", "Dr. Heyl Group", "cluster_data")
 println("Using data from: $datapath")
 
-lattice_sizes = [48, 64] #[16, 32, 48, 64];
+lattice_sizes = [16, 32, 48, 64];
 temps = [1.80, 1.90, 2.00, 2.10, 2.20, 2.21, 2.22, 2.23, 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.32, 2.33, 2.34, 2.35, 2.36, 2.37, 2.38, 2.39, 2.40, 2.50, 2.60, 2.70];
 
 using ScikitLearn
@@ -26,7 +26,7 @@ for L in lattice_sizes
         end
 
         el = @elapsed begin
-            configs_vecs = collect(eachcol(readdlm(datafile, ',', Float64)))
+            configs_vecs = collect(eachcol(readdlm(datafile, ',', Int64)))
             nnbrs = fit!(model, configs_vecs)
             dists, idxs = NearestNeighbors.kneighbors(nnbrs, configs_vecs)
             fnn = dists[:, 2]
